@@ -10,21 +10,20 @@
     <script src="https://sad.adsgram.ai/js/sad-b.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
-        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 15px; cursor: pointer; width: 85%; }
+        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
+        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 85%; }
         #status { font-size: 15px; font-weight: bold; margin-top: 15px; line-height: 1.6; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
-        .info { color: #2a82c4; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h2>🎬 مشاهدة إعلان فيديو</h2>
-        <p>اضغط على الزر وشاهد الفيديو الإعلاني كاملاً للحصول على نقاطك!</p>
+        <p>اضغط على الزر وشاهد الفيديو الإعلاني كاملاً للحصول على مكافأتك!</p>
         
-        <button class="btn" onclick="showAdsgramAd()">🎬 تشغيل فيديو Adsgram</button>
+        <button class="btn" onclick="showAd()">🎬 تشغيل الفيديو الآن</button>
 
         <div id="status"></div>
     </div>
@@ -33,34 +32,28 @@
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        function showAdsgramAd() {
+        // تهيئة Adsgram باستخدام رقم الوحدة الخاصة بك 42276
+        const AdController = window.Adsgram.init({ blockId: "42276" });
+
+        function showAd() {
             const statusBox = document.getElementById('status');
-            statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري جلب الفيديو من Adsgram...";
+            statusBox.className = "";
+            statusBox.innerText = "⏳ جاري تحميل الفيديو...";
 
-            // التحقق من تحميل مكتبة Adsgram
-            if (window.Adsgram) {
-                const AdController = window.Adsgram.init({ blockId: "42276" });
+            AdController.show().then((result) => {
+                // تم مشاهدة الفيديو بالكامل داخل التلغرام!
+                statusBox.className = "success";
+                statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
+                
+                setTimeout(() => {
+                    Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
+                }, 1000);
 
-                AdController.show().then((result) => {
-                    // اكتمل الفيديو بنجاح
-                    statusBox.className = "success";
-                    statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
-                    
-                    setTimeout(() => {
-                        Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
-                    }, 1000);
-                }).catch((error) => {
-                    statusBox.className = "error";
-                    console.error("Adsgram Error:", error);
-                    
-                    // إذا كان الحساب جديداً أو لم تتوفر إعلانات فيديو بعد
-                    statusBox.innerHTML = "⚠️ لا يوجد إعلان فيديو متوفر حالياً من Adsgram (قد يتطلب تفعيل المنصة من اللوحة).";
-                });
-            } else {
+            }).catch((result) => {
+                // اغلق المستخدم الفيديو قبل انتهائه أو لم يتوفر إعلان
                 statusBox.className = "error";
-                statusBox.innerText = "❌ تعذر اتصال الشبكة بمكتبة الإعلانات.";
-            }
+                statusBox.innerText = "❌ لم يكتمل مشاهدة الفيديو، تم إلغاء المكافأة!";
+            });
         }
     </script>
 </body>
