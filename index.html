@@ -3,96 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاهدة الإعلان</title>
+    <title>مشاهدة إعلان فيديو</title>
+    <!-- مكتبة التلغرام الرسمية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- مكتبة Adsgram الرسمية -->
+    <script src="https://sad.adsgram.ai/js/sad-b.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
-        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 80%; }
-        #timer-box { font-size: 18px; font-weight: bold; color: #2a82c4; margin-top: 15px; }
-        #warning { color: #d9534f; font-weight: bold; margin-top: 10px; display: none; }
+        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
+        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 80%; }
+        #status { font-size: 16px; font-weight: bold; margin-top: 15px; line-height: 1.5; }
+        .error { color: #d9534f; }
+        .success { color: #5cb85c; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🎬 مشاهدة الإعلان</h2>
-        <p>اضغط على الزر لمشاهدة الإعلان. <b>يجب عدم الخروج من هذه الشاشة</b> ليكتمل العداد!</p>
+        <h2>🎬 مشاهدة إعلان فيديو</h2>
+        <p>اضغط على الزر وشاهد الفيديو الإعلاني كاملاً للحصول على مكافأتك!</p>
         
-        <button id="ad-btn" class="btn" onclick="openAdAndStart()">🔗 اضغط هنا لمشاهدة الإعلان</button>
+        <button class="btn" onclick="showAd()">🎬 تشغيل الفيديو الآن</button>
 
-        <div id="timer-box"></div>
-        <div id="warning">⚠️ تم إيقاف العداد لأنك غادرت التطبيق! يرجى إبقاء التطبيق مفتوحاً.</div>
+        <div id="status"></div>
     </div>
 
     <script>
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        let timerStarted = false;
-        let timeLeft = 15;
-        let interval = null;
-        let isWindowActive = true;
+        // ربط Adsgram باستخدام الـ Block ID الخاص بك (42276)
+        const AdController = window.Adsgram.init({ blockId: "42276" });
 
-        // كشف فقدان التركيز (عند الانتقال لمتصفح آخر أو تطبييق آخر)
-        window.addEventListener('blur', function() {
-            isWindowActive = false;
-            showWarning(true);
-        });
+        function showAd() {
+            const statusBox = document.getElementById('status');
+            statusBox.className = "";
+            statusBox.innerText = "⏳ جاري تحميل الفيديو...";
 
-        window.addEventListener('focus', function() {
-            isWindowActive = true;
-            showWarning(false);
-        });
+            AdController.show().then((result) => {
+                // تم إكمال الفيديو بنجاح!
+                statusBox.className = "success";
+                statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
+                
+                setTimeout(() => {
+                    Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
+                }, 1000);
 
-        document.addEventListener("visibilitychange", function() {
-            if (document.hidden) {
-                isWindowActive = false;
-                showWarning(true);
-            } else {
-                isWindowActive = true;
-                showWarning(false);
-            }
-        });
-
-        function showWarning(show) {
-            const warningElem = document.getElementById('warning');
-            if (timerStarted && timeLeft > 0) {
-                warningElem.style.display = show ? "block" : "none";
-            }
-        }
-
-        function openAdAndStart() {
-            const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-            
-            // فتح الإعلان عبر رابط التلغرام الداخلي بدلاً من نافذة مستقلة خارجية
-            Telegram.WebApp.openLink(adUrl);
-
-            if (timerStarted) return;
-            timerStarted = true;
-
-            const timerBox = document.getElementById('timer-box');
-            timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
-
-            interval = setInterval(() => {
-                // إذا خُرج من الشاشة أو لم تكن الشاشة نشطة يُجمّد العداد فوراً
-                if (!isWindowActive || document.hidden) {
-                    showWarning(true);
-                    return; 
-                }
-
-                timeLeft--;
-                timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    timerBox.innerText = "✅ تم التحقق بنجاح! جاري إضافة النقاط...";
-                    
-                    setTimeout(() => {
-                        Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
-                    }, 1000);
-                }
-            }, 1000);
+            }).catch((result) => {
+                // المستخدم أغلق الفيديو قبل انتهائه أو لم يتوفر إعلان
+                statusBox.className = "error";
+                statusBox.innerText = "❌ لم يكتمل مشاهدة الفيديو، تم إلغاء المكافأة!";
+            });
         }
     </script>
 </body>
