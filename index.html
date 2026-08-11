@@ -4,42 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مشاهدة الإعلان</title>
-    <!-- مكتبة التلغرام الرسمية للـ Mini App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 10px; margin: 0; }
-        #timer-box { font-size: 18px; font-weight: bold; color: #2a82c4; margin: 15px 0; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        iframe { width: 100%; height: 500px; border: none; border-radius: 10px; }
+        body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
+        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
+        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 80%; }
+        #timer-box { font-size: 18px; font-weight: bold; color: #2a82c4; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div id="timer-box">يرجى الانتظار <span id="timer">15</span> ثانية للحصول على المكافأة...</div>
+    <div class="card">
+        <h2>🎬 مشاهدة الإعلان</h2>
+        <p>اضغط على الزر بالأسفل لفتح الإعلان، وسيبدأ العداد التنازلي للحصول على المكافأة!</p>
+        
+        <a id="ad-btn" href="https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b" target="_blank" class="btn" onclick="startTimer()">🔗 اضغط هنا لمشاهدة الإعلان</a>
 
-    <!-- رابط الإعلان الخاص بك من Adsterra -->
-    <iframe src="https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b"></iframe>
+        <div id="timer-box"></div>
+    </div>
 
     <script>
         Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
 
-        let timeLeft = 15;
-        const timerElem = document.getElementById('timer');
-        const timerBox = document.getElementById('timer-box');
+        let timerStarted = false;
 
-        const interval = setInterval(() => {
-            timeLeft--;
-            timerElem.innerText = timeLeft;
+        function startTimer() {
+            if (timerStarted) return;
+            timerStarted = true;
 
-            if (timeLeft <= 0) {
-                clearInterval(interval);
-                timerBox.innerHTML = "✅ تم التحقق! جاري إضافة النقاط...";
-                
-                // إرسال إشارة للبوت لترصيد النقاط
-                setTimeout(() => {
-                    Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
-                }, 1000);
-            }
-        }, 1000);
+            let timeLeft = 15;
+            const timerBox = document.getElementById('timer-box');
+            timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    timerBox.innerText = "✅ تم التحقق بنجاح! جاري إضافة النقاط...";
+                    
+                    setTimeout(() => {
+                        // إرسال النتيجة للبوت وإغلاق الشاشة تلقائياً
+                        Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
+                    }, 1000);
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
