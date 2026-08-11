@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مشاهدة الإعلان</title>
-    <!-- مكتبة التلغرام الرسمية -->
+    <!-- مكتبة التلغرام -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+    <!-- مكتبة Adsgram الرسمية بالطريقة المباشرة -->
+    <script src="https://sad.adsgram.ai/js/sad-b.js" async></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
         .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
@@ -28,50 +29,24 @@
         <div id="status"></div>
     </div>
 
-    <!-- تحميل مكتبة Adsgram مع آلية الاتصال البديل -->
     <script>
-        function loadAdsgramScript(primaryUrl, fallbackUrl) {
-            return new Promise((resolve) => {
-                const script1 = document.createElement('script');
-                script1.src = primaryUrl;
-                script1.onload = () => resolve(true);
-                script1.onerror = () => {
-                    // في حال فشل الرابط الأول، جرب الرابط البديل
-                    const script2 = document.createElement('script');
-                    script2.src = fallbackUrl;
-                    script2.onload = () => resolve(true);
-                    script2.onerror = () => resolve(false);
-                    document.head.appendChild(script2);
-                };
-                document.head.appendChild(script1);
-            });
-        }
-
-        // تحضير السكريبت فور فتح الصفحة
-        let isAdsgramReady = false;
-        loadAdsgramScript("https://sad.adsgram.ai/js/sad-b.js", "https://cdn.adsgram.ai/js/sad-b.js").then((success) => {
-            isAdsgramReady = success && !!window.Adsgram;
-        });
-
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        async function showAd() {
+        function showAd() {
             const statusBox = document.getElementById('status');
             const btn = document.getElementById('adBtn');
             
             btn.disabled = true;
             statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري تحميل الإعلان...";
+            statusBox.innerText = "⏳ جاري تحضير الإعلان...";
 
-            // تأكيد الجاهزية
-            if (!window.Adsgram) {
-                await loadAdsgramScript("https://sad.adsgram.ai/js/sad-b.js", "https://cdn.adsgram.ai/js/sad-b.js");
-            }
-
-            if (window.Adsgram) {
+            // كشف كائن Adsgram بدون تعقيدات
+            if (typeof Adsgram !== 'undefined' || typeof window.Adsgram !== 'undefined') {
+                const adsgramInstance = window.Adsgram || Adsgram;
+                
                 try {
-                    const AdController = window.Adsgram.init({ blockId: "42276" });
+                    const AdController = adsgramInstance.init({ blockId: "42276" });
 
                     AdController.show().then((result) => {
                         statusBox.className = "success";
@@ -83,17 +58,17 @@
                     }).catch((error) => {
                         btn.disabled = false;
                         statusBox.className = "error";
-                        statusBox.innerText = "⚠️ لا يوجد إعلان متوفر حالياً، أو تم إغلاقه قبل الانتهاء.";
+                        statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان مبكراً.";
                     });
-                } catch (e) {
+                } catch (err) {
                     btn.disabled = false;
                     statusBox.className = "error";
-                    statusBox.innerText = "❌ حدث خطأ أثناء تشغيل الإعلان: " + e.message;
+                    statusBox.innerText = "❌ خطأ في المشغل: " + err.message;
                 }
             } else {
                 btn.disabled = false;
                 statusBox.className = "error";
-                statusBox.innerText = "❌ تعذر تحميل مشغل الإعلانات. يرجى محاولة تغيير سيرفر الـ VPN وإعادة الفتح.";
+                statusBox.innerText = "🛑 تعذر تشغيل الإعلانات حالياً، أعد المحاولة بعد قليل.";
             }
         }
     </script>
