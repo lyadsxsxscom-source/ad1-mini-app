@@ -6,7 +6,7 @@
     <title>مشاهدة الإعلان</title>
     <!-- مكتبة التلغرام الرسمية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- مكتبة Adsgram مع كاشف الأخطاء -->
+    <!-- مكتبة Adsgram -->
     <script src="https://sad.adsgram.ai/js/sad-b.js" onerror="window.adsgramBlocked=true"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
@@ -41,11 +41,10 @@
             statusBox.className = "info";
             statusBox.innerText = "⏳ جاري تحميل الفيديو...";
 
-            // التحقق مما إذا كانت شبكة الإعلانات محجوبة بواسطة AdBlock أو Private DNS
             if (window.adsgramBlocked || !window.Adsgram) {
                 btn.disabled = false;
                 statusBox.className = "error";
-                statusBox.innerText = "🚫 يتعذر تحميل سيرفر الإعلانات!\nيرجى إيقاف (Private DNS) أو مانع الإعلانات (AdBlock) في الهاتف.";
+                statusBox.innerText = "🌐 يتعذر الاتصال بسيرفر الإعلانات!\nيرجى تشغيل الـ VPN وإعادة المحاولة.";
                 return;
             }
 
