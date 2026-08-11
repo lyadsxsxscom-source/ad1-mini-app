@@ -17,12 +17,12 @@
 
     <div class="card">
         <h2>🎬 مشاهدة الإعلان</h2>
-        <p>اضغط على الزر لمشاهدة الإعلان. **يجب إبقاء هذه الصفحة مفتوحة** ليكتمل العداد!</p>
+        <p>اضغط على الزر لمشاهدة الإعلان. <b>يجب عدم الخروج من هذه الشاشة</b> ليكتمل العداد!</p>
         
-        <a id="ad-btn" href="https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b" target="_blank" class="btn" onclick="startTimer()">🔗 اضغط هنا لمشاهدة الإعلان</a>
+        <button id="ad-btn" class="btn" onclick="openAdAndStart()">🔗 اضغط هنا لمشاهدة الإعلان</button>
 
         <div id="timer-box"></div>
-        <div id="warning">⚠️ تم إيقاف العداد مؤقتاً لأنك غادرت الصفحة! عد فوراً لإكمال الوقت.</div>
+        <div id="warning">⚠️ تم إيقاف العداد لأنك غادرت التطبيق! يرجى إبقاء التطبيق مفتوحاً.</div>
     </div>
 
     <script>
@@ -32,35 +32,53 @@
         let timerStarted = false;
         let timeLeft = 15;
         let interval = null;
-        let isVpnDetected = false;
+        let isWindowActive = true;
 
-        // فحص الـ VPN قبل البدء
-        async function checkVPN() {
-            try {
-                let res = await fetch('https://ipapi.co/json/');
-                let data = await res.json();
-                // يمكنك إضافة فحص بسيط للـ Proxy/Hosting إذا لزم الأمر
-            } catch(e) {
-                console.log("VPN Check Error", e);
+        // كشف فقدان التركيز (عند الانتقال لمتصفح آخر أو تطبييق آخر)
+        window.addEventListener('blur', function() {
+            isWindowActive = false;
+            showWarning(true);
+        });
+
+        window.addEventListener('focus', function() {
+            isWindowActive = true;
+            showWarning(false);
+        });
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                isWindowActive = false;
+                showWarning(true);
+            } else {
+                isWindowActive = true;
+                showWarning(false);
+            }
+        });
+
+        function showWarning(show) {
+            const warningElem = document.getElementById('warning');
+            if (timerStarted && timeLeft > 0) {
+                warningElem.style.display = show ? "block" : "none";
             }
         }
-        checkVPN();
 
-        function startTimer() {
+        function openAdAndStart() {
+            const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+            
+            // فتح الإعلان عبر رابط التلغرام الداخلي بدلاً من نافذة مستقلة خارجية
+            Telegram.WebApp.openLink(adUrl);
+
             if (timerStarted) return;
             timerStarted = true;
 
             const timerBox = document.getElementById('timer-box');
-            const warningElem = document.getElementById('warning');
             timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
 
             interval = setInterval(() => {
-                // إذا كانت الصفحة غير نشطة (خرج المستخدم للمتصفح أو تطبيق آخر)، لا يحسب الوقت
-                if (document.hidden) {
-                    warningElem.style.display = "block";
+                // إذا خُرج من الشاشة أو لم تكن الشاشة نشطة يُجمّد العداد فوراً
+                if (!isWindowActive || document.hidden) {
+                    showWarning(true);
                     return; 
-                } else {
-                    warningElem.style.display = "none";
                 }
 
                 timeLeft--;
@@ -76,14 +94,6 @@
                 }
             }, 1000);
         }
-
-        // إيقاف واستئناف عند الخروج والعودة
-        document.addEventListener("visibilitychange", function() {
-            const warningElem = document.getElementById('warning');
-            if (document.hidden && timerStarted && timeLeft > 0) {
-                warningElem.style.display = "block";
-            }
-        });
     </script>
 </body>
 </html>
