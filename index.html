@@ -6,8 +6,8 @@
     <title>مشاهدة الإعلان</title>
     <!-- مكتبة التلغرام الرسمية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- مكتبة Adsgram الرسمية الصحيحة -->
-    <script src="https://sad.adsgram.ai/js/sad-b.js?v=2"></script>
+    <!-- مكتبة Adsgram مع كاشف الأخطاء -->
+    <script src="https://sad.adsgram.ai/js/sad-b.js" onerror="window.adsgramBlocked=true"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
         .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
@@ -39,13 +39,18 @@
             
             btn.disabled = true;
             statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري جلب الفيديو...";
+            statusBox.innerText = "⏳ جاري تحميل الفيديو...";
 
-            // التحقق من وجود الكائن كـ AdsgramController أو Adsgram
-            const AdsgramLib = window.Adsgram || window.AdsgramController;
+            // التحقق مما إذا كانت شبكة الإعلانات محجوبة بواسطة AdBlock أو Private DNS
+            if (window.adsgramBlocked || !window.Adsgram) {
+                btn.disabled = false;
+                statusBox.className = "error";
+                statusBox.innerText = "🚫 يتعذر تحميل سيرفر الإعلانات!\nيرجى إيقاف (Private DNS) أو مانع الإعلانات (AdBlock) في الهاتف.";
+                return;
+            }
 
-            if (AdsgramLib) {
-                const AdController = AdsgramLib.init({ blockId: "42276" });
+            try {
+                const AdController = window.Adsgram.init({ blockId: "42276" });
 
                 AdController.show().then((result) => {
                     statusBox.className = "success";
@@ -57,12 +62,12 @@
                 }).catch((error) => {
                     btn.disabled = false;
                     statusBox.className = "error";
-                    statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان قبل انتهائه.";
+                    statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان مبكراً.";
                 });
-            } else {
+            } catch (e) {
                 btn.disabled = false;
                 statusBox.className = "error";
-                statusBox.innerText = "❌ تعذر الاتصال بمكتبة الإعلانات، جرب استخدام VPN أو تحديث الصفحة.";
+                statusBox.innerText = "❌ حدث خطأ: " + e.message;
             }
         }
     </script>
