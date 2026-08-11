@@ -6,8 +6,7 @@
     <title>مشاهدة الإعلان</title>
     <!-- مكتبة التلغرام الرسمية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- مكتبة Adsgram -->
-    <script src="https://sad.adsgram.ai/js/sad-b.js" onerror="window.adsgramBlocked=true"></script>
+    
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
         .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
@@ -29,44 +28,72 @@
         <div id="status"></div>
     </div>
 
+    <!-- تحميل مكتبة Adsgram مع آلية الاتصال البديل -->
     <script>
+        function loadAdsgramScript(primaryUrl, fallbackUrl) {
+            return new Promise((resolve) => {
+                const script1 = document.createElement('script');
+                script1.src = primaryUrl;
+                script1.onload = () => resolve(true);
+                script1.onerror = () => {
+                    // في حال فشل الرابط الأول، جرب الرابط البديل
+                    const script2 = document.createElement('script');
+                    script2.src = fallbackUrl;
+                    script2.onload = () => resolve(true);
+                    script2.onerror = () => resolve(false);
+                    document.head.appendChild(script2);
+                };
+                document.head.appendChild(script1);
+            });
+        }
+
+        // تحضير السكريبت فور فتح الصفحة
+        let isAdsgramReady = false;
+        loadAdsgramScript("https://sad.adsgram.ai/js/sad-b.js", "https://cdn.adsgram.ai/js/sad-b.js").then((success) => {
+            isAdsgramReady = success && !!window.Adsgram;
+        });
+
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        function showAd() {
+        async function showAd() {
             const statusBox = document.getElementById('status');
             const btn = document.getElementById('adBtn');
             
             btn.disabled = true;
             statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري تحميل الفيديو...";
+            statusBox.innerText = "⏳ جاري تحميل الإعلان...";
 
-            if (window.adsgramBlocked || !window.Adsgram) {
-                btn.disabled = false;
-                statusBox.className = "error";
-                statusBox.innerText = "🌐 يتعذر الاتصال بسيرفر الإعلانات!\nيرجى تشغيل الـ VPN وإعادة المحاولة.";
-                return;
+            // تأكيد الجاهزية
+            if (!window.Adsgram) {
+                await loadAdsgramScript("https://sad.adsgram.ai/js/sad-b.js", "https://cdn.adsgram.ai/js/sad-b.js");
             }
 
-            try {
-                const AdController = window.Adsgram.init({ blockId: "42276" });
+            if (window.Adsgram) {
+                try {
+                    const AdController = window.Adsgram.init({ blockId: "42276" });
 
-                AdController.show().then((result) => {
-                    statusBox.className = "success";
-                    statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
-                    
-                    setTimeout(() => {
-                        Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
-                    }, 1000);
-                }).catch((error) => {
+                    AdController.show().then((result) => {
+                        statusBox.className = "success";
+                        statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
+                        
+                        setTimeout(() => {
+                            Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
+                        }, 1000);
+                    }).catch((error) => {
+                        btn.disabled = false;
+                        statusBox.className = "error";
+                        statusBox.innerText = "⚠️ لا يوجد إعلان متوفر حالياً، أو تم إغلاقه قبل الانتهاء.";
+                    });
+                } catch (e) {
                     btn.disabled = false;
                     statusBox.className = "error";
-                    statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان مبكراً.";
-                });
-            } catch (e) {
+                    statusBox.innerText = "❌ حدث خطأ أثناء تشغيل الإعلان: " + e.message;
+                }
+            } else {
                 btn.disabled = false;
                 statusBox.className = "error";
-                statusBox.innerText = "❌ حدث خطأ: " + e.message;
+                statusBox.innerText = "❌ تعذر تحميل مشغل الإعلانات. يرجى محاولة تغيير سيرفر الـ VPN وإعادة الفتح.";
             }
         }
     </script>
