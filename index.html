@@ -7,20 +7,22 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
+        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
         .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 80%; }
         #timer-box { font-size: 18px; font-weight: bold; color: #2a82c4; margin-top: 15px; }
+        #warning { color: #d9534f; font-weight: bold; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h2>🎬 مشاهدة الإعلان</h2>
-        <p>اضغط على الزر بالأسفل لفتح الإعلان، وسيبدأ العداد التنازلي للحصول على المكافأة!</p>
+        <p>اضغط على الزر لمشاهدة الإعلان. **يجب إبقاء هذه الصفحة مفتوحة** ليكتمل العداد!</p>
         
         <a id="ad-btn" href="https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b" target="_blank" class="btn" onclick="startTimer()">🔗 اضغط هنا لمشاهدة الإعلان</a>
 
         <div id="timer-box"></div>
+        <div id="warning">⚠️ تم إيقاف العداد مؤقتاً لأنك غادرت الصفحة! عد فوراً لإكمال الوقت.</div>
     </div>
 
     <script>
@@ -28,16 +30,39 @@
         Telegram.WebApp.expand();
 
         let timerStarted = false;
+        let timeLeft = 15;
+        let interval = null;
+        let isVpnDetected = false;
+
+        // فحص الـ VPN قبل البدء
+        async function checkVPN() {
+            try {
+                let res = await fetch('https://ipapi.co/json/');
+                let data = await res.json();
+                // يمكنك إضافة فحص بسيط للـ Proxy/Hosting إذا لزم الأمر
+            } catch(e) {
+                console.log("VPN Check Error", e);
+            }
+        }
+        checkVPN();
 
         function startTimer() {
             if (timerStarted) return;
             timerStarted = true;
 
-            let timeLeft = 15;
             const timerBox = document.getElementById('timer-box');
+            const warningElem = document.getElementById('warning');
             timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
 
-            const interval = setInterval(() => {
+            interval = setInterval(() => {
+                // إذا كانت الصفحة غير نشطة (خرج المستخدم للمتصفح أو تطبيق آخر)، لا يحسب الوقت
+                if (document.hidden) {
+                    warningElem.style.display = "block";
+                    return; 
+                } else {
+                    warningElem.style.display = "none";
+                }
+
                 timeLeft--;
                 timerBox.innerText = `⏳ يرجى الانتظار ${timeLeft} ثانية...`;
 
@@ -46,12 +71,19 @@
                     timerBox.innerText = "✅ تم التحقق بنجاح! جاري إضافة النقاط...";
                     
                     setTimeout(() => {
-                        // إرسال النتيجة للبوت وإغلاق الشاشة تلقائياً
                         Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
                     }, 1000);
                 }
             }, 1000);
         }
+
+        // إيقاف واستئناف عند الخروج والعودة
+        document.addEventListener("visibilitychange", function() {
+            const warningElem = document.getElementById('warning');
+            if (document.hidden && timerStarted && timeLeft > 0) {
+                warningElem.style.display = "block";
+            }
+        });
     </script>
 </body>
 </html>
