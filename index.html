@@ -6,8 +6,8 @@
     <title>مشاهدة الإعلان</title>
     <!-- مكتبة التلغرام الرسمية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- مكتبة Adsgram الرسمية -->
-    <script src="https://sad.adsgram.ai/js/sad-b.js"></script>
+    <!-- مكتبة Adsgram الرسمية الصحيحة -->
+    <script src="https://sad.adsgram.ai/js/sad-b.js?v=2"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
         .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
@@ -39,10 +39,13 @@
             
             btn.disabled = true;
             statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري جلب الفيديو من الشبكة...";
+            statusBox.innerText = "⏳ جاري جلب الفيديو...";
 
-            if (window.Adsgram) {
-                const AdController = window.Adsgram.init({ blockId: "42276" });
+            // التحقق من وجود الكائن كـ AdsgramController أو Adsgram
+            const AdsgramLib = window.Adsgram || window.AdsgramController;
+
+            if (AdsgramLib) {
+                const AdController = AdsgramLib.init({ blockId: "42276" });
 
                 AdController.show().then((result) => {
                     statusBox.className = "success";
@@ -54,18 +57,12 @@
                 }).catch((error) => {
                     btn.disabled = false;
                     statusBox.className = "error";
-                    
-                    // إظهار سبب عدم عمل الفيديو
-                    if (error && error.description) {
-                        statusBox.innerText = "❌ تعذر إظهار الفيديو: " + error.description;
-                    } else {
-                        statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً. (انتظر تفعيل الحساب من Adsgram أو فعّل Test platform)";
-                    }
+                    statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان قبل انتهائه.";
                 });
             } else {
                 btn.disabled = false;
                 statusBox.className = "error";
-                statusBox.innerText = "❌ تعذر الاتصال بمكتبة Adsgram. تحقق من الإنترنت.";
+                statusBox.innerText = "❌ تعذر الاتصال بمكتبة الإعلانات، جرب استخدام VPN أو تحديث الصفحة.";
             }
         }
     </script>
