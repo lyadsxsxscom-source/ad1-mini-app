@@ -12,7 +12,7 @@
         h1 { font-size: 22px; color: #0088cc; }
         .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
         .btn-adsterra { background-color: #ff9800; }
-        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; }
+        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; box-shadow: 0 0 10px #4CAF50; }
         .hidden { display: none; }
         .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 15px; }
     </style>
@@ -44,13 +44,11 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        // تعديل الشرط ليعمل فوراً داخل التليجرام بدون تعقيد
         if (tg) {
             tg.ready();
             tg.expand();
             document.getElementById('telegram-view').classList.remove('hidden');
             
-            // محاولة جلب الاسم إن وجد
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "المستخدم";
             }
@@ -62,17 +60,50 @@
         let startTime = 0;
         const REQUIRED_SECONDS = 15;
         let checkInterval = null;
+        let adWindow = null; // الاحتفاظ بنادفة الإعلان لإغلاقها
+
+        // دالة تشغيل صوت التنبيه
+        function playSuccessSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // نغمة أولى
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // نغمة ثانية أعلى
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch (e) {
+                console.log("Audio API error:", e);
+            }
+        }
+
+        // دالة اهتزاز الهاتف
+        function triggerVibration() {
+            // اهتزاز التليجرام الرسمي
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            // اهتزاز المتصفح العادي
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
 
         function startAdProcess() {
             startTime = Date.now();
-            window.open(adUrl, '_blank');
+            adWindow = window.open(adUrl, '_blank'); // فتح صفحة الإعلان
 
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
             
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 15 ثانية ثم العودة هنا...`;
+            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 15 ثانية...`;
 
             if (checkInterval) clearInterval(checkInterval);
             
@@ -83,7 +114,12 @@
 
                     if (remaining <= 0) {
                         clearInterval(checkInterval);
-                        timerStatus.innerText = "🎉 اكتمل الوقت بنجاح! اضغط على الزر الأخضر بالأسفل لاستلام نقاطك 👇";
+                        
+                        // 🔊 تشغيل الصوت + 📳 اهتزاز الهاتف عند انتهاء الوقت!
+                        playSuccessSound();
+                        triggerVibration();
+
+                        timerStatus.innerText = "🎉 انتهى الوقت! اضغط على الزر الأخضر بالأسفل لاستلام النقاط 👇";
                         
                         btn.disabled = false;
                         btn.className = "btn btn-claim";
@@ -101,6 +137,11 @@
         function claimReward() {
             const timerStatus = document.getElementById('timer-status');
             timerStatus.innerText = "⏳ جاري تحويل النقاط إلى حسابك...";
+
+            // محاولة إغلاق صفحة الإعلان تلقائياً
+            if (adWindow && !adWindow.closed) {
+                try { adWindow.close(); } catch(e) {}
+            }
 
             if (tg) {
                 tg.sendData(JSON.stringify({
