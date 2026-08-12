@@ -25,7 +25,8 @@
         <div id="telegram-view" class="hidden">
             <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">...</b> 👋</p>
             
-            <a href="https://www.fastsvr.com/wall/UG2x1" class="btn" target="_blank">
+            <!-- زر العروض معدل ليكون جاهزاً للتتبع -->
+            <a id="offerwall-link" href="#" class="btn" target="_blank">
                 🎯 إكمال المهام والعروض
             </a>
             
@@ -48,129 +49,84 @@
             tg.ready();
             tg.expand();
             document.getElementById('telegram-view').classList.remove('hidden');
+            
+            // --- كود التتبع الذكي للعروض ---
+            const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
+            const linkElement = document.getElementById('offerwall-link');
+            
+            // إضافة الـ ID الخاص بالمستخدم للرابط تلقائياً
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const userId = tg.initDataUnsafe.user.id;
+                // يمكنك تغيير subid إلى user_id أو sid حسب ما تطلبه شركة العروض الخاصة بك
+                linkElement.href = offerwallBase + "?subid=" + userId; 
+            } else {
+                linkElement.href = offerwallBase;
+            }
+            // -----------------------------
+
         } else {
             document.getElementById('browser-view').classList.remove('hidden');
         }
 
-        // دالة جلب الاسم الذكية (تقرأ الاسم من الرابط أو من تليجرام مباشرة)
+        // جلب الاسم
         function getUserName() {
             const urlParams = new URLSearchParams(window.location.search);
             const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-            if (nameFromUrl) {
-                return decodeURIComponent(nameFromUrl);
-            }
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
-                return tg.initDataUnsafe.user.first_name;
-            }
+            if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) return tg.initDataUnsafe.user.first_name;
             return null;
         }
 
         let nameFound = false;
         let checkCount = 0;
-
         const nameInterval = setInterval(() => {
             checkCount++;
             const name = getUserName();
-            
             if (name) {
                 document.getElementById('user-name').innerText = name;
                 nameFound = true;
                 clearInterval(nameInterval);
             } else if (checkCount > 40) {
                 clearInterval(nameInterval);
-                if (!nameFound && document.getElementById('user-name').innerText === '...') {
-                    document.getElementById('user-name').innerText = "المستخدم";
-                }
+                if (!nameFound) document.getElementById('user-name').innerText = "المستخدم";
             }
         }, 100);
 
+        // كود الإعلانات
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
         let startTime = 0;
         const REQUIRED_SECONDS = 15;
         let checkInterval = null;
         let adWindow = null;
 
-        function playSuccessSound() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.5);
-            } catch (e) {
-                console.log("Audio API error:", e);
-            }
-        }
-
-        function triggerVibration() {
-            if (tg && tg.HapticFeedback) {
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-            }
-        }
-
         function startAdProcess() {
             startTime = Date.now();
             adWindow = window.open(adUrl, '_blank');
-
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
-            
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
             timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 15 ثانية...`;
-
             if (checkInterval) clearInterval(checkInterval);
-            
             checkInterval = setInterval(() => {
                 if (startTime > 0) {
                     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    const remaining = REQUIRED_SECONDS - elapsedSeconds;
-
-                    if (remaining <= 0) {
+                    if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
                         clearInterval(checkInterval);
-                        
-                        playSuccessSound();
-                        triggerVibration();
-
-                        timerStatus.innerText = "🎉 انتهى الوقت! اضغط على الزر الأخضر بالأسفل لاستلام النقاط 👇";
-                        
+                        timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
                         btn.disabled = false;
                         btn.className = "btn btn-claim";
                         btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
                         btn.onclick = claimReward;
-                    } else {
-                        if (document.visibilityState === 'visible') {
-                            timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... ارجع للإعلان لإكمال الوقت!`;
-                        }
                     }
                 }
             }, 1000);
         }
 
         function claimReward() {
-            const timerStatus = document.getElementById('timer-status');
-            timerStatus.innerText = "⏳ جاري تحويل النقاط إلى حسابك...";
-
-            if (adWindow && !adWindow.closed) {
-                try { adWindow.close(); } catch(e) {}
-            }
-
+            if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
             if (tg) {
-                tg.sendData(JSON.stringify({
-                    action: "add_points",
-                    amount: 0.0050
-                }));
-                
+                tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0050 }));
                 setTimeout(() => { tg.close(); }, 800);
             }
         }
