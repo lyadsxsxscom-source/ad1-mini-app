@@ -75,37 +75,16 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    timerStatus.innerText = "⏳ جاري إرسال النقاط لحسابك...";
+                    timerStatus.innerText = "✅ تم مشاهدة الإعلان! جاري إضافة النقاط...";
                     
-                    const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : null;
-
-                    if (userId) {
-                        // إرسال طلب أوتوماتيكي لسيرفر PythonAnywhere الخاص بك
-                        fetch('https://IbrahimKazmoz.pythonanywhere.com/api/add-points', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                user_id: userId,
-                                amount: 0.0050 // قيمة الإعلان بالدولار
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.status === 'success') {
-                                timerStatus.innerText = "✅ تمت إضافة النقاط لرصيدك بنجاح!";
-                                setTimeout(() => { if (tg) tg.close(); }, 1500);
-                            } else {
-                                timerStatus.innerText = "❌ حدث خطأ أثناء احتساب النقاط.";
-                            }
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            timerStatus.innerText = "❌ تعذر الاتصال بالسيرفر.";
-                        });
-                    } else {
-                        alert("تمت العملية لكن تعذر التعرف على حساب التليجرام!");
+                    if (tg) {
+                        // إرسال النتيجة فوراً للبوت عبر التليجرام مباشرة
+                        tg.sendData(JSON.stringify({
+                            action: "add_points",
+                            amount: 0.0050
+                        }));
+                        
+                        setTimeout(() => { tg.close(); }, 1000);
                     }
                 }
             }, 1000);
