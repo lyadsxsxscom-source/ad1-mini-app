@@ -3,74 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاهدة الإعلان</title>
-    <!-- مكتبة التلغرام -->
+    <title>Mall Games App Rewards</title>
+    <!-- مكتبة تليجرام الرسمية للـ Mini Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- مكتبة Adsgram الرسمية بالطريقة المباشرة -->
-    <script src="https://sad.adsgram.ai/js/sad-b.js" async></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 25px 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 30px; }
-        .btn { display: inline-block; padding: 14px 28px; background-color: #2a82c4; color: white; border-radius: 10px; font-weight: bold; font-size: 16px; border: none; margin-top: 20px; cursor: pointer; width: 85%; }
-        #status { font-size: 15px; font-weight: bold; margin-top: 15px; line-height: 1.6; }
-        .error { color: #d9534f; }
-        .success { color: #5cb85c; }
-        .info { color: #2a82c4; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .card {
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        h1 { font-size: 22px; color: #0088cc; }
+        p { font-size: 15px; color: #cccccc; line-height: 1.6; }
+        .btn {
+            display: block;
+            width: 90%;
+            padding: 14px;
+            margin: 15px auto;
+            background-color: #0088cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn:hover { background-color: #006699; }
+        .btn-adsterra { background-color: #ff9800; }
+        .btn-adsterra:hover { background-color: #e68a00; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🎬 مشاهدة إعلان فيديو</h2>
-        <p>اضغط على الزر وشاهد الفيديو الإعلاني كاملاً للحصول على مكافأتك!</p>
+        <h1>مرحباً بك في Mall Games App! 🎁</h1>
         
-        <button class="btn" id="adBtn" onclick="showAd()">🎬 تشغيل الفيديو الآن</button>
+        <!-- قسم يظهر فقط إذا دخل الزائر من التليجرام -->
+        <div id="telegram-view" class="hidden">
+            <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">مستخدم</b> 👋</p>
+            <p>اختر إحدى الطرق التالية لجمع النقاط فوراً:</p>
+            
+            <!-- زر جدار عروض CPALead -->
+            <a href="رابط_جدار_عروض_CPALead_هنا" class="btn" target="_blank">
+                🎯 إكمال المهام والعروض (نقاط عالية)
+            </a>
+            
+            <!-- زر Smartlink الخاص بـ Adsterra -->
+            <a href="رابط_Adsterra_Smartlink_هنا" class="btn btn-adsterra" target="_blank">
+                ⚡ مشاهدة إعلان سريع
+            </a>
+        </div>
 
-        <div id="status"></div>
+        <!-- قسم يظهر فقط إذا دخل الزائر من متصفح عادي خارج التليجرام -->
+        <div id="browser-view" class="hidden">
+            <p>لكسب النقاط وسحب المكافآت، يجب عليك فتح البوت وتأكيد حسابك عبر التليجرام.</p>
+            <a href="https://t.me/mallgames_bot" class="btn">
+                📲 تسجيل الدخول عبر Telegram
+            </a>
+        </div>
     </div>
 
     <script>
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
+        // التهيئة مع تليجرام
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        function showAd() {
-            const statusBox = document.getElementById('status');
-            const btn = document.getElementById('adBtn');
+        // التحقق مما إذا كانت الصفحة مفتوحة داخل تطبيق التليجرام
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            tg.expand(); // توسيع الشاشة داخل البوت
+            document.getElementById('telegram-view').classList.remove('hidden');
             
-            btn.disabled = true;
-            statusBox.className = "info";
-            statusBox.innerText = "⏳ جاري تحضير الإعلان...";
-
-            // كشف كائن Adsgram بدون تعقيدات
-            if (typeof Adsgram !== 'undefined' || typeof window.Adsgram !== 'undefined') {
-                const adsgramInstance = window.Adsgram || Adsgram;
-                
-                try {
-                    const AdController = adsgramInstance.init({ blockId: "bot-42384" });
-
-                    AdController.show().then((result) => {
-                        statusBox.className = "success";
-                        statusBox.innerText = "✅ تم مشاهدة الفيديو بنجاح! جاري إضافة النقاط...";
-                        
-                        setTimeout(() => {
-                            Telegram.WebApp.sendData(JSON.stringify({ status: "success" }));
-                        }, 1000);
-                    }).catch((error) => {
-                        btn.disabled = false;
-                        statusBox.className = "error";
-                        statusBox.innerText = "⚠️ لا يوجد فيديو متوفر حالياً، أو تم إغلاق الإعلان مبكراً.";
-                    });
-                } catch (err) {
-                    btn.disabled = false;
-                    statusBox.className = "error";
-                    statusBox.innerText = "❌ خطأ في المشغل: " + err.message;
-                }
-            } else {
-                btn.disabled = false;
-                statusBox.className = "error";
-                statusBox.innerText = "🛑 تعذر تشغيل الإعلانات حالياً، أعد المحاولة بعد قليل.";
-            }
+            // جلب اسم المستخدم من التليجرام
+            const user = tg.initDataUnsafe.user;
+            document.getElementById('user-name').innerText = user.first_name || "المستخدم";
+        } else {
+            // إذا كان زائر عادي من المتصفح
+            document.getElementById('browser-view').classList.remove('hidden');
         }
     </script>
+
 </body>
 </html>
