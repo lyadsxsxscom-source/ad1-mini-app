@@ -1,129 +1,207 @@
--view" class="hidden">
-            <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
-        </div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mall Games App</title>
+  
+  <!-- مكتبة تليجرام -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #151e27;
+      color: #ffffff;
+      padding: 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .hidden { display: none !important; }
+    
+    .welcome-box {
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 12px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      box-sizing: border-box;
+      color: #ffffff;
+      transition: opacity 0.2s ease;
+    }
+    .btn:active { opacity: 0.8; }
+    
+    .btn-offerwall { background-color: #f59e0b; }
+    .btn-ad { background-color: #10b981; }
+    .btn-cpx { background-color: #0088cc; }
+    .btn-claim { background-color: #ec4899; }
+    
+    .timer-status {
+      margin-top: -6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #facc15;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- قسم العرض المخصص للتليجرام -->
+    <div id="telegram-view" class="hidden">
+      <div class="welcome-box">
+        مرحباً بك، <span id="user-name">المستخدم</span> 👋
+      </div>
+
+      <!-- 1️⃣ زر جدار العروض FastSvr -->
+      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">
+        🔥 تنفيذ العروض (FastSvr)
+      </a>
+
+      <!-- 2️⃣ زر مشاهدة الإعلان -->
+      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
+        🎬 مشاهدة إعلان (+10 نقاط)
+      </button>
+      <div id="timer-status" class="timer-status hidden"></div>
+
+      <!-- 3️⃣ زر استبيانات CPX Research -->
+      <button onclick="openCpxSurveys()" class="btn btn-cpx">
+        📋 استبيانات CPX Research
+      </button>
     </div>
 
-    <!-- بطاقات وقوائم العروض -->
-    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-        <!-- زر CPX Research الجديد -->
-        <button onclick="openCpxSurveys()" class="btn" style="background-color: #0088cc; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            📋 استبيانات CPX Research
-        </button>
+    <!-- قسم العرض في حال فتح الرابط من متصفح عادي خارج تليجرام -->
+    <div id="browser-view" class="hidden">
+      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
     </div>
+  </div>
 
-    <script>
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
+  <script>
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            document.getElementById('telegram-view').classList.remove('hidden');
-            
-            // --- كود التتبع الذكي للعروض ---
-            const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
-            const linkElement = document.getElementById('offerwall-link');
-            
-            // إضافة الـ ID الخاص بالمستخدم للرابط تلقائياً
-            if (linkElement) {
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    const userId = tg.initDataUnsafe.user.id;
-                    linkElement.href = offerwallBase + "?subid=" + userId; 
-                } else {
-                    linkElement.href = offerwallBase;
-                }
-            }
-            // -----------------------------
-
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      document.getElementById('telegram-view').classList.remove('hidden');
+      
+      // --- كود التتبع الذكي للعروض (FastSvr) ---
+      const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
+      const linkElement = document.getElementById('offerwall-link');
+      
+      if (linkElement) {
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+          const userId = tg.initDataUnsafe.user.id;
+          linkElement.href = offerwallBase + "?subid=" + userId; 
         } else {
-            document.getElementById('browser-view').classList.remove('hidden');
+          linkElement.href = offerwallBase;
         }
+      }
+    } else {
+      document.getElementById('browser-view').classList.remove('hidden');
+    }
 
-        // --- دالة فتح استبيانات CPX Research ---
-        function openCpxSurveys() {
-            let userId = '123456'; // معرف افتراضي للتجربة خارج التليجرام
-            
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                userId = tg.initDataUnsafe.user.id;
+    // --- دالة فتح استبيانات CPX Research ---
+    function openCpxSurveys() {
+      let userId = '123456';
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        userId = tg.initDataUnsafe.user.id;
+      }
+
+      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
+
+      if (tg && tg.openLink) {
+        tg.openLink(cpxUrl);
+      } else {
+        window.open(cpxUrl, '_blank');
+      }
+    }
+
+    // --- دالة جلب وعرض اسم المستخدم ---
+    function getUserName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
+        return tg.initDataUnsafe.user.first_name;
+      }
+      return null;
+    }
+
+    let nameFound = false;
+    let checkCount = 0;
+    const nameInterval = setInterval(() => {
+      checkCount++;
+      const name = getUserName();
+      if (name) {
+        const userNameElem = document.getElementById('user-name');
+        if (userNameElem) userNameElem.innerText = name;
+        nameFound = true;
+        clearInterval(nameInterval);
+      } else if (checkCount > 40) {
+        clearInterval(nameInterval);
+        const userNameElem = document.getElementById('user-name');
+        if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
+      }
+    }, 100);
+
+    // --- كود مشاهدة الإعلانات وحساب الوقت ---
+    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+    let startTime = 0;
+    const REQUIRED_SECONDS = 30;
+    let checkInterval = null;
+    let adWindow = null;
+
+    function startAdProcess() {
+      startTime = Date.now();
+      adWindow = window.open(adUrl, '_blank');
+      const btn = document.getElementById('ad-btn');
+      const timerStatus = document.getElementById('timer-status');
+      if (btn) btn.disabled = true;
+      if (timerStatus) {
+        timerStatus.classList.remove('hidden');
+        timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
+      }
+      if (checkInterval) clearInterval(checkInterval);
+      checkInterval = setInterval(() => {
+        if (startTime > 0) {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
+            clearInterval(checkInterval);
+            if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
+            if (btn) {
+              btn.disabled = false;
+              btn.className = "btn btn-claim";
+              btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+              btn.onclick = claimReward;
             }
-
-            // رابط العرض الخاص بك شاملاً ID التطبيق (35328) ومعرف المستخدم
-            const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
-
-            if (tg && tg.openLink) {
-                tg.openLink(cpxUrl);
-            } else {
-                window.open(cpxUrl, '_blank');
-            }
+          }
         }
+      }, 1000);
+    }
 
-        // جلب الاسم
-        function getUserName() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-            if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) return tg.initDataUnsafe.user.first_name;
-            return null;
-        }
-
-        let nameFound = false;
-        let checkCount = 0;
-        const nameInterval = setInterval(() => {
-            checkCount++;
-            const name = getUserName();
-            if (name) {
-                const userNameElem = document.getElementById('user-name');
-                if (userNameElem) userNameElem.innerText = name;
-                nameFound = true;
-                clearInterval(nameInterval);
-            } else if (checkCount > 40) {
-                clearInterval(nameInterval);
-                const userNameElem = document.getElementById('user-name');
-                if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
-            }
-        }, 100);
-
-        // كود الإعلانات
-        const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-        let startTime = 0;
-        const REQUIRED_SECONDS = 30;
-        let checkInterval = null;
-        let adWindow = null;
-
-        function startAdProcess() {
-            startTime = Date.now();
-            adWindow = window.open(adUrl, '_blank');
-            const btn = document.getElementById('ad-btn');
-            const timerStatus = document.getElementById('timer-status');
-            if (btn) btn.disabled = true;
-            if (timerStatus) {
-                timerStatus.classList.remove('hidden');
-                timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
-            }
-            if (checkInterval) clearInterval(checkInterval);
-            checkInterval = setInterval(() => {
-                if (startTime > 0) {
-                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
-                        clearInterval(checkInterval);
-                        if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.className = "btn btn-claim";
-                            btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-                            btn.onclick = claimReward;
-                        }
-                    }
-                }
-            }, 1000);
-        }
-
-        function claimReward() {
-            if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
-            if (tg) {
-                tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
-                setTimeout(() => { tg.close(); }, 800);
-            }
-        }
-    </script>
+    function claimReward() {
+      if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
+      if (tg) {
+        tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
+        setTimeout(() => { tg.close(); }, 800);
+      }
+    }
+  </script>
 </body>
 </html>
