@@ -12,6 +12,7 @@
         h1 { font-size: 22px; color: #0088cc; }
         .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
         .btn-adsterra { background-color: #ff9800; }
+        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; } /* زر أخضر لاستلام المكافأة */
         .hidden { display: none; }
         .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 15px; }
     </style>
@@ -28,6 +29,7 @@
                 🎯 إكمال المهام والعروض
             </a>
             
+            <!-- زر الإعلان / استلام المكافأة -->
             <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
                 ⚡ مشاهدة إعلان سريع (+10 نقاط)
             </button>
@@ -52,10 +54,12 @@
         }
 
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-        let timeLeft = 15;
-        let timerInterval = null;
+        let startTime = 0;
+        const REQUIRED_SECONDS = 15;
+        let checkInterval = null;
 
         function startAdProcess() {
+            startTime = Date.now();
             window.open(adUrl, '_blank');
 
             const btn = document.getElementById('ad-btn');
@@ -63,31 +67,48 @@
             
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ يرجى البقاء في صفحة الإعلان... (15 ثانية)`;
+            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 15 ثانية ثم العودة هنا...`;
 
-            timerInterval = setInterval(() => {
-                if (document.visibilityState === 'hidden') {
-                    timeLeft--;
-                    timerStatus.innerText = `⏳ جاري احتساب الوقت... (${timeLeft} ثانية)`;
-                } else if (timeLeft < 15 && timeLeft > 0) {
-                    timerStatus.innerText = `⚠️ عدت مبكراً! يرجى العودة للإعلان (${timeLeft} ثانية)`;
-                }
+            if (checkInterval) clearInterval(checkInterval);
+            
+            checkInterval = setInterval(() => {
+                if (startTime > 0) {
+                    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                    const remaining = REQUIRED_SECONDS - elapsedSeconds;
 
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    timerStatus.innerText = "✅ تم مشاهدة الإعلان! جاري إضافة النقاط...";
-                    
-                    if (tg) {
-                        // إرسال البيانات للبوت عبر التليجرام مباشرة
-                        tg.sendData(JSON.stringify({
-                            action: "add_points",
-                            amount: 0.0050
-                        }));
+                    if (remaining <= 0) {
+                        clearInterval(checkInterval);
+                        timerStatus.innerText = "🎉 اكتمل الوقت بنجاح! اضغط على الزر الأخضر بالأسفل لاستلام نقاطك 👇";
                         
-                        setTimeout(() => { tg.close(); }, 1200);
+                        // تحويل الزر فوراً إلى زر استلام المكافأة الأخضر
+                        btn.disabled = false;
+                        btn.className = "btn btn-claim";
+                        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+                        btn.onclick = claimReward;
+                    } else {
+                        if (document.visibilityState === 'visible') {
+                            timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... ارجع للإعلان لإكمال الوقت!`;
+                        }
                     }
                 }
             }, 1000);
+        }
+
+        function claimReward() {
+            const timerStatus = document.getElementById('timer-status');
+            timerStatus.innerText = "⏳ جاري تحويل النقاط إلى حسابك...";
+
+            if (tg) {
+                // إرسال البيانات فوراً للبوت
+                tg.sendData(JSON.stringify({
+                    action: "add_points",
+                    amount: 0.0050
+                }));
+                
+                setTimeout(() => { tg.close(); }, 800);
+            } else {
+                alert("تمت إضافة النقاط بنجاح!");
+            }
         }
     </script>
 </body>
