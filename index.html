@@ -126,7 +126,7 @@
         function claimReward() {
             if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
             if (tg) {
-                tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0050 }));
+                tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
                 setTimeout(() => { tg.close(); }, 800);
             }
         }
