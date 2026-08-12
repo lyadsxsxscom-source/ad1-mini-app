@@ -12,7 +12,7 @@
         h1 { font-size: 22px; color: #0088cc; }
         .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
         .btn-adsterra { background-color: #ff9800; }
-        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; } /* زر أخضر لاستلام المكافأة */
+        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; }
         .hidden { display: none; }
         .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 15px; }
     </style>
@@ -29,7 +29,6 @@
                 🎯 إكمال المهام والعروض
             </a>
             
-            <!-- زر الإعلان / استلام المكافأة -->
             <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
                 ⚡ مشاهدة إعلان سريع (+10 نقاط)
             </button>
@@ -45,10 +44,16 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        // تعديل الشرط ليعمل فوراً داخل التليجرام بدون تعقيد
+        if (tg) {
+            tg.ready();
             tg.expand();
             document.getElementById('telegram-view').classList.remove('hidden');
-            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "المستخدم";
+            
+            // محاولة جلب الاسم إن وجد
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "المستخدم";
+            }
         } else {
             document.getElementById('browser-view').classList.remove('hidden');
         }
@@ -80,7 +85,6 @@
                         clearInterval(checkInterval);
                         timerStatus.innerText = "🎉 اكتمل الوقت بنجاح! اضغط على الزر الأخضر بالأسفل لاستلام نقاطك 👇";
                         
-                        // تحويل الزر فوراً إلى زر استلام المكافأة الأخضر
                         btn.disabled = false;
                         btn.className = "btn btn-claim";
                         btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
@@ -99,15 +103,12 @@
             timerStatus.innerText = "⏳ جاري تحويل النقاط إلى حسابك...";
 
             if (tg) {
-                // إرسال البيانات فوراً للبوت
                 tg.sendData(JSON.stringify({
                     action: "add_points",
                     amount: 0.0050
                 }));
                 
                 setTimeout(() => { tg.close(); }, 800);
-            } else {
-                alert("تمت إضافة النقاط بنجاح!");
             }
         }
     </script>
