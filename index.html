@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mall Games App Rewards</title>
-    <!-- مكتبة تليجرام الرسمية للـ Mini Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -47,7 +46,7 @@
         .btn-claim { background-color: #4CAF50; }
         .btn-claim:hover { background-color: #45a049; }
         .hidden { display: none; }
-        .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 10px; }
+        .timer-text { font-weight: bold; color: #ff9800; font-size: 15px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -55,17 +54,14 @@
     <div class="card">
         <h1>مرحباً بك في Mall Games App! 🎁</h1>
         
-        <!-- قسم التليجرام -->
         <div id="telegram-view" class="hidden">
             <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">مستخدم</b> 👋</p>
             <p>اختر إحدى الطرق التالية لجمع النقاط فوراً:</p>
             
-            <!-- زر جدار عروض CPALead -->
             <a href="https://www.fastsvr.com/wall/UG2x1" class="btn" target="_blank">
                 🎯 إكمال المهام والعروض (نقاط عالية)
             </a>
             
-            <!-- زر Smartlink الخاص بـ Adsterra مع المؤقت -->
             <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
                 ⚡ مشاهدة إعلان سريع (+10 نقاط)
             </button>
@@ -73,7 +69,6 @@
             <div id="timer-status" class="timer-text hidden"></div>
         </div>
 
-        <!-- قسم المتصفح العادي -->
         <div id="browser-view" class="hidden">
             <p>لكسب النقاط وسحب المكافآت، يجب عليك فتح البوت وتأكيد حسابك عبر التليجرام.</p>
             <a href="https://t.me/mallgames_bot" class="btn">
@@ -94,32 +89,39 @@
             document.getElementById('browser-view').classList.remove('hidden');
         }
 
-        // رابط الإعلان
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-        let timeLeft = 30; // مدة الانتظار بالثواني
-        let timerInterval;
+        let timeLeft = 15;
+        let timerInterval = null;
+        let isAdOpened = false;
 
         function startAdProcess() {
-            // فتح رابط الإعلان في تبويب جديد
             window.open(adUrl, '_blank');
+            isAdOpened = true;
 
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
             
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ انتظر ${timeLeft} ثانية للحصول على النقاط...`;
+            timerStatus.innerText = `⏳ يرجى البقاء في صفحة الإعلان لمتابعة العداد (${timeLeft} ثانية)...`;
 
+            // احتساب الوقت فقط إذا كان المستخدم خارج هذه الصفحة (أي في صفحة الإعلان)
+            if (timerInterval) clearInterval(timerInterval);
+            
             timerInterval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft > 0) {
-                    timerStatus.innerText = `⏳ انتظر ${timeLeft} ثانية للحصول على النقاط...`;
-                } else {
+                // إذا عاد المستخدم للتطبيق قبل انتهاء الوقت
+                if (document.visibilityState === 'visible' && timeLeft > 0) {
+                    timerStatus.innerText = `⚠️ لقد عدت مبكراً! يرجى العودة لصفحة الإعلان لإكمال العداد (${timeLeft} ثانية)...`;
+                } else if (document.visibilityState === 'hidden' && timeLeft > 0) {
+                    timeLeft--;
+                }
+
+                if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    timerStatus.innerText = "🎉 اكتمل وقت الإعلان!";
+                    timerStatus.innerText = "🎉 اكتملت مشاهدة الإعلان بنجاح!";
                     btn.disabled = false;
                     btn.className = "btn btn-claim";
-                    btn.innerText = "✅ اضغط هنا لاستلام النقاط";
+                    btn.innerText = "✅ اضغط هنا لإرسال النقاط للبوت";
                     btn.onclick = claimPoints;
                 }
             }, 1000);
@@ -127,10 +129,12 @@
 
         function claimPoints() {
             if (tg) {
-                // إظهار تنبيه داخل التليجرام بتسليم النقاط
-                tg.showAlert("تم إضافة 10 نقاط إلى حسابك بنجاح! 🪙");
-                // إعادة الزر لحالته الأصلية
-                setTimeout(() => { location.reload(); }, 1500);
+                // إرسال بيئة بيانات حقيقية للبوت لتحديث الرصيد في السيرفر
+                tg.sendData(JSON.stringify({
+                    action: "add_points",
+                    points: 10,
+                    source: "adsterra_ad"
+                }));
             } else {
                 alert("تم إضافة النقاط!");
             }
