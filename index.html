@@ -43,7 +43,11 @@
         .btn:hover { background-color: #006699; }
         .btn-adsterra { background-color: #ff9800; }
         .btn-adsterra:hover { background-color: #e68a00; }
+        .btn:disabled { background-color: #555555; cursor: not-allowed; }
+        .btn-claim { background-color: #4CAF50; }
+        .btn-claim:hover { background-color: #45a049; }
         .hidden { display: none; }
+        .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -51,7 +55,7 @@
     <div class="card">
         <h1>مرحباً بك في Mall Games App! 🎁</h1>
         
-        <!-- قسم يظهر فقط إذا دخل الزائر من التليجرام -->
+        <!-- قسم التليجرام -->
         <div id="telegram-view" class="hidden">
             <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">مستخدم</b> 👋</p>
             <p>اختر إحدى الطرق التالية لجمع النقاط فوراً:</p>
@@ -61,13 +65,15 @@
                 🎯 إكمال المهام والعروض (نقاط عالية)
             </a>
             
-            <!-- زر Smartlink الخاص بـ Adsterra -->
-            <a href="https://www.effectivecpmnetwork.com/vipqetuym?key=0ad8cc8be984deeca2bd3c2cab96f9c5" class="btn btn-adsterra" target="_blank">
-                ⚡ مشاهدة إعلان سريع
-            </a>
+            <!-- زر Smartlink الخاص بـ Adsterra مع المؤقت -->
+            <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
+                ⚡ مشاهدة إعلان سريع (+10 نقاط)
+            </button>
+            
+            <div id="timer-status" class="timer-text hidden"></div>
         </div>
 
-        <!-- قسم يظهر فقط إذا دخل الزائر من متصفح عادي خارج التليجرام -->
+        <!-- قسم المتصفح العادي -->
         <div id="browser-view" class="hidden">
             <p>لكسب النقاط وسحب المكافآت، يجب عليك فتح البوت وتأكيد حسابك عبر التليجرام.</p>
             <a href="https://t.me/mallgames_bot" class="btn">
@@ -77,20 +83,57 @@
     </div>
 
     <script>
-        // التهيئة مع تليجرام
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        // التحقق مما إذا كانت الصفحة مفتوحة داخل تطبيق التليجرام
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            tg.expand(); // توسيع الشاشة داخل البوت
+            tg.expand();
             document.getElementById('telegram-view').classList.remove('hidden');
-            
-            // جلب اسم المستخدم من التليجرام
             const user = tg.initDataUnsafe.user;
             document.getElementById('user-name').innerText = user.first_name || "المستخدم";
         } else {
-            // إذا كان زائر عادي من المتصفح
             document.getElementById('browser-view').classList.remove('hidden');
+        }
+
+        // رابط الإعلان
+        const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+        let timeLeft = 30; // مدة الانتظار بالثواني
+        let timerInterval;
+
+        function startAdProcess() {
+            // فتح رابط الإعلان في تبويب جديد
+            window.open(adUrl, '_blank');
+
+            const btn = document.getElementById('ad-btn');
+            const timerStatus = document.getElementById('timer-status');
+            
+            btn.disabled = true;
+            timerStatus.classList.remove('hidden');
+            timerStatus.innerText = `⏳ انتظر ${timeLeft} ثانية للحصول على النقاط...`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    timerStatus.innerText = `⏳ انتظر ${timeLeft} ثانية للحصول على النقاط...`;
+                } else {
+                    clearInterval(timerInterval);
+                    timerStatus.innerText = "🎉 اكتمل وقت الإعلان!";
+                    btn.disabled = false;
+                    btn.className = "btn btn-claim";
+                    btn.innerText = "✅ اضغط هنا لاستلام النقاط";
+                    btn.onclick = claimPoints;
+                }
+            }, 1000);
+        }
+
+        function claimPoints() {
+            if (tg) {
+                // إظهار تنبيه داخل التليجرام بتسليم النقاط
+                tg.showAlert("تم إضافة 10 نقاط إلى حسابك بنجاح! 🪙");
+                // إعادة الزر لحالته الأصلية
+                setTimeout(() => { location.reload(); }, 1500);
+            } else {
+                alert("تم إضافة النقاط!");
+            }
         }
     </script>
 
