@@ -1,166 +1,279 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>متصفح المهام والعروض</title>
-    <!-- جلب مكتبة Telegram WebApp -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            text-align: center;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mall Games App</title>
+  
+  <!-- مكتبة تليجرام -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #151e27;
+      color: #ffffff;
+      padding: 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .hidden { display: none !important; }
+    
+    .welcome-box {
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 12px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      box-sizing: border-box;
+      color: #ffffff;
+      transition: opacity 0.2s ease;
+    }
+    .btn:active { opacity: 0.8; }
+    
+    .btn-offerwall { background-color: #f59e0b; }
+    .btn-ad { background-color: #10b981; }
+    .btn-cpx { background-color: #0088cc; }
+    .btn-claim { background-color: #ec4899; }
+    
+    .timer-status {
+      margin-top: -6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #facc15;
+    }
 
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-size: 22px;
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-
-        .btn {
-            display: inline-block;
-            width: 100%;
-            padding: 15px 0;
-            margin-top: 15px;
-            background-color: #0088cc;
-            color: #fff;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #006699;
-        }
-
-        /* شاشة الحظر للـ VPN */
-        .vpn-blocked {
-            display: none;
-            padding: 30px 15px;
-            background-color: #ffe6e6;
-            border: 2px solid #ff4d4d;
-            border-radius: 12px;
-            color: #cc0000;
-        }
-
-        .vpn-blocked h2 {
-            margin-top: 0;
-        }
-
-        /* مؤشر التحميل */
-        #loader {
-            font-size: 16px;
-            color: #0088cc;
-            margin: 20px 0;
-        }
-    </style>
+    /* تصميم شاشة حظر الـ VPN */
+    .vpn-box {
+      background-color: #3f1d24;
+      border: 2px solid #ef4444;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .vpn-box h2 {
+      color: #f87171;
+      margin-top: 0;
+      font-size: 20px;
+    }
+    .vpn-box p {
+      color: #fca5a5;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- مؤشر فحص الـ VPN -->
-        <div id="loader">⏳ جاري التحقق من أمان الاتصال...</div>
+  <div class="container">
 
-        <!-- شاشة الحظر (تظهر فقط عند تفعيل VPN) -->
-        <div id="vpn-screen" class="vpn-blocked">
-            <h2>⚠️ تم اكتشاف VPN / Proxy</h2>
-            <p>عذراً، لا يمكنك استخدام التطبيق أثناء تفعيل الـ VPN أو تطبيق تغيير الموقع.</p>
-            <p><strong>يرجى إيقاف الـ VPN وإعادة فتح التطبيق للمتابعة.</strong></p>
-        </div>
-
-        <!-- المحتوى الرئيسي (يظهر فقط إذا كان الاتصال آمناً) -->
-        <div id="main-content" style="display: none;">
-            <h1>أهلاً بك في قسم الاستبيانات 🎯</h1>
-            <p>أكمل الاستبيانات المتاحة واكسب النقاط فوراً إلى حسابك!</p>
-            
-            <button class="btn" onclick="openCPX()">📋 فتح استبيانات CPX Research</button>
-        </div>
+    <!-- شاشة الانتظار أثناء فحص الـ VPN -->
+    <div id="loading-view">
+      <p style="color: #38bdf8; font-size: 16px;">⏳ جاري التحقق من أمان الاتصال...</p>
     </div>
 
-    <script>
-        // تهيئة Telegram WebApp
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) {
-            tg.expand(); // توسيع النافذة
+    <!-- شاشة الحظر عند فتح الـ VPN -->
+    <div id="vpn-view" class="hidden">
+      <div class="vpn-box">
+        <h2>⚠️ تم اكتشاف VPN / Proxy</h2>
+        <p>عذراً، لا يمكنك استخدام التطبيق أثناء تشغيل الـ VPN أو برامج تغيير الموقع.</p>
+        <p><strong>يرجى إغلاق الـ VPN وإعادة فتح التطبيق للمتابعة.</strong></p>
+      </div>
+    </div>
+
+    <!-- قسم العرض المخصص للتليجرام (يظهر فقط إذا كان الاتصال بدون VPN) -->
+    <div id="telegram-view" class="hidden">
+      <div class="welcome-box">
+        مرحباً بك، <span id="user-name">المستخدم</span> 👋
+      </div>
+
+      <!-- 1️⃣ زر جدار العروض FastSvr -->
+      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">
+        🔥 تنفيذ العروض (FastSvr)
+      </a>
+
+      <!-- 2️⃣ زر مشاهدة الإعلان -->
+      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
+        🎬 مشاهدة إعلان (+10 نقاط)
+      </button>
+      <div id="timer-status" class="timer-status hidden"></div>
+
+      <!-- 3️⃣ زر استبيانات CPX Research -->
+      <button onclick="openCpxSurveys()" class="btn btn-cpx">
+        📋 استبيانات CPX Research
+      </button>
+    </div>
+
+    <!-- قسم العرض في حال فتح الرابط من متصفح عادي خارج تليجرام -->
+    <div id="browser-view" class="hidden">
+      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
+    </div>
+
+  </div>
+
+  <script>
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+    // --- 🛡️ نظام فحص الـ VPN الصارم ---
+    async function verifySecurityAndInit() {
+      const loadingView = document.getElementById('loading-view');
+      const vpnView = document.getElementById('vpn-view');
+
+      try {
+        // الفحص عبر apiip.co السريعة والمحمية بـ HTTPS
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+
+        // في حال تم اكتشاف Proxy أو Hosting (VPN)
+        if (data.proxy || data.hosting || data.security?.is_proxy) {
+          loadingView.classList.add('hidden');
+          vpnView.classList.remove('hidden');
+          return; // إيقاف تشغيل بقية التطبيق فوراً
+        }
+      } catch (err) {
+        console.log("تجاوز الفحص في حال تعذر السيرفر للضرورة");
+      }
+
+      // إخفاء التحميل والبدء في عرض الأزرار
+      loadingView.classList.add('hidden');
+      initApp();
+    }
+
+    // --- تشغيل التطبيق بعد تجاوز فحص الـ VPN بنجاح ---
+    function initApp() {
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        document.getElementById('telegram-view').classList.remove('hidden');
+        
+        // --- كود التتبع الذكي للعروض (FastSvr) ---
+        const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
+        const linkElement = document.getElementById('offerwall-link');
+        
+        if (linkElement) {
+          if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const userId = tg.initDataUnsafe.user.id;
+            linkElement.href = offerwallBase + "?subid=" + userId; 
+          } else {
+            linkElement.href = offerwallBase;
+          }
         }
 
-        // استخراج معرف المستخدم من تليجرام (user_id)
-        let userId = "guest";
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            userId = tg.initDataUnsafe.user.id;
+        // تشغيل جلب اسم المستخدم
+        startFetchingName();
+
+      } else {
+        document.getElementById('browser-view').classList.remove('hidden');
+      }
+    }
+
+    // --- دالة فتح استبيانات CPX Research ---
+    function openCpxSurveys() {
+      let userId = '123456';
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        userId = tg.initDataUnsafe.user.id;
+      }
+
+      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
+
+      if (tg && tg.openLink) {
+        tg.openLink(cpxUrl);
+      } else {
+        window.open(cpxUrl, '_blank');
+      }
+    }
+
+    // --- دالة جلب وعرض اسم المستخدم ---
+    function getUserName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
+        return tg.initDataUnsafe.user.first_name;
+      }
+      return null;
+    }
+
+    function startFetchingName() {
+      let nameFound = false;
+      let checkCount = 0;
+      const nameInterval = setInterval(() => {
+        checkCount++;
+        const name = getUserName();
+        if (name) {
+          const userNameElem = document.getElementById('user-name');
+          if (userNameElem) userNameElem.innerText = name;
+          nameFound = true;
+          clearInterval(nameInterval);
+        } else if (checkCount > 40) {
+          clearInterval(nameInterval);
+          const userNameElem = document.getElementById('user-name');
+          if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
         }
+      }, 100);
+    }
 
-        // 🛡️ دالة فحص الـ VPN / Proxy
-        async function checkSecurity() {
-            const loader = document.getElementById('loader');
-            const vpnScreen = document.getElementById('vpn-screen');
-            const mainContent = document.getElementById('main-content');
+    // --- كود مشاهدة الإعلانات وحساب الوقت ---
+    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+    let startTime = 0;
+    const REQUIRED_SECONDS = 30;
+    let checkInterval = null;
+    let adWindow = null;
 
-            try {
-                // فحص عنوان الـ IP عبر ip-api
-                const response = await fetch('https://ip-api.com/json/?fields=status,message,proxy,hosting');
-                const data = await response.json();
-
-                // في حال كشف VPN أو Proxy أو سيرفر استضافة
-                if (data.proxy || data.hosting) {
-                    loader.style.display = 'none';
-                    vpnScreen.style.display = 'block';
-                    return false;
-                }
-
-                // الاتصال آمن
-                loader.style.display = 'none';
-                mainContent.style.display = 'block';
-                return true;
-
-            } catch (error) {
-                console.error("خطأ أثناء الفحص:", error);
-                // في حال فشل السيرفر في الفحص، اسمح للمستخدم بالدخول لتجنب تعطيل الخدمة
-                loader.style.display = 'none';
-                mainContent.style.display = 'block';
-                return true;
+    function startAdProcess() {
+      startTime = Date.now();
+      adWindow = window.open(adUrl, '_blank');
+      const btn = document.getElementById('ad-btn');
+      const timerStatus = document.getElementById('timer-status');
+      if (btn) btn.disabled = true;
+      if (timerStatus) {
+        timerStatus.classList.remove('hidden');
+        timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
+      }
+      if (checkInterval) clearInterval(checkInterval);
+      checkInterval = setInterval(() => {
+        if (startTime > 0) {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
+            clearInterval(checkInterval);
+            if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
+            if (btn) {
+              btn.disabled = false;
+              btn.className = "btn btn-claim";
+              btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+              btn.onclick = claimReward;
             }
+          }
         }
+      }, 1000);
+    }
 
-        // 🚀 دالة فتح عروض CPX
-        function openCPX() {
-            // رابط CPX المباشر الخاص بك مع الـ App ID والـ User ID
-            const appId = "35328";
-            const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=${appId}&ext_user_id=${userId}`;
+    function claimReward() {
+      if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
+      if (tg) {
+        tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
+        setTimeout(() => { tg.close(); }, 800);
+      }
+    }
 
-            // فتح العروض داخل تليجرام أو المتصفح
-            if (tg && tg.openLink) {
-                tg.openLink(cpxUrl);
-            } else {
-                window.location.href = cpxUrl;
-            }
-        }
-
-        // تشغيل فحص الأمان فور تحميل الصفحة
-        window.onload = checkSecurity;
-    </script>
+    // تشغيل الفحص فور فتح الصفحة
+    window.onload = verifySecurityAndInit;
+  </script>
 </body>
 </html>
