@@ -78,13 +78,13 @@
                     timerStatus.innerText = "✅ تم مشاهدة الإعلان! جاري إضافة النقاط...";
                     
                     if (tg) {
-                        // إرسال النتيجة فوراً للبوت عبر التليجرام مباشرة
+                        // إرسال البيانات للبوت عبر التليجرام مباشرة
                         tg.sendData(JSON.stringify({
                             action: "add_points",
                             amount: 0.0050
                         }));
                         
-                        setTimeout(() => { tg.close(); }, 1000);
+                        setTimeout(() => { tg.close(); }, 1200);
                     }
                 }
             }, 1000);
