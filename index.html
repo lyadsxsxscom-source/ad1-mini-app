@@ -1,45 +1,14 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mall Games App</title>
-    <!-- مكتبة تليجرام -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding: 20px; margin: 0; }
-        .card { background-color: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 400px; margin: 20px auto; }
-        h1 { font-size: 22px; color: #0088cc; }
-        .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; box-sizing: border-box; }
-        .btn-adsterra { background-color: #ff9800; }
-        .btn-claim { background-color: #4CAF50 !important; font-size: 17px; box-shadow: 0 0 10px #4CAF50; }
-        .hidden { display: none; }
-        .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 15px; }
-    </style>
-</head>
-<body>
-
-    <div class="card">
-        <h1>مرحباً بك في Mall Games App! 🎁</h1>
-        
-        <div id="telegram-view" class="hidden">
-            <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">...</b> 👋</p>
-            
-            <!-- زر العروض معدل ليكون جاهزاً للتتبع -->
-            <a id="offerwall-link" href="#" class="btn" target="_blank">
-                🎯 إكمال المهام والعروض
-            </a>
-            
-            <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
-                ⚡ مشاهدة إعلان سريع (+10 نقاط)
-            </button>
-            
-            <div id="timer-status" class="timer-text hidden"></div>
-        </div>
-
-        <div id="browser-view" class="hidden">
+-view" class="hidden">
             <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
         </div>
+    </div>
+
+    <!-- بطاقات وقوائم العروض -->
+    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- زر CPX Research الجديد -->
+        <button onclick="openCpxSurveys()" class="btn" style="background-color: #0088cc; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            📋 استبيانات CPX Research
+        </button>
     </div>
 
     <script>
@@ -55,17 +24,36 @@
             const linkElement = document.getElementById('offerwall-link');
             
             // إضافة الـ ID الخاص بالمستخدم للرابط تلقائياً
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                const userId = tg.initDataUnsafe.user.id;
-                // يمكنك تغيير subid إلى user_id أو sid حسب ما تطلبه شركة العروض الخاصة بك
-                linkElement.href = offerwallBase + "?subid=" + userId; 
-            } else {
-                linkElement.href = offerwallBase;
+            if (linkElement) {
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const userId = tg.initDataUnsafe.user.id;
+                    linkElement.href = offerwallBase + "?subid=" + userId; 
+                } else {
+                    linkElement.href = offerwallBase;
+                }
             }
             // -----------------------------
 
         } else {
             document.getElementById('browser-view').classList.remove('hidden');
+        }
+
+        // --- دالة فتح استبيانات CPX Research ---
+        function openCpxSurveys() {
+            let userId = '123456'; // معرف افتراضي للتجربة خارج التليجرام
+            
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                userId = tg.initDataUnsafe.user.id;
+            }
+
+            // رابط العرض الخاص بك شاملاً ID التطبيق (35328) ومعرف المستخدم
+            const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
+
+            if (tg && tg.openLink) {
+                tg.openLink(cpxUrl);
+            } else {
+                window.open(cpxUrl, '_blank');
+            }
         }
 
         // جلب الاسم
@@ -83,12 +71,14 @@
             checkCount++;
             const name = getUserName();
             if (name) {
-                document.getElementById('user-name').innerText = name;
+                const userNameElem = document.getElementById('user-name');
+                if (userNameElem) userNameElem.innerText = name;
                 nameFound = true;
                 clearInterval(nameInterval);
             } else if (checkCount > 40) {
                 clearInterval(nameInterval);
-                if (!nameFound) document.getElementById('user-name').innerText = "المستخدم";
+                const userNameElem = document.getElementById('user-name');
+                if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
             }
         }, 100);
 
@@ -104,20 +94,24 @@
             adWindow = window.open(adUrl, '_blank');
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
-            btn.disabled = true;
-            timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
+            if (btn) btn.disabled = true;
+            if (timerStatus) {
+                timerStatus.classList.remove('hidden');
+                timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
+            }
             if (checkInterval) clearInterval(checkInterval);
             checkInterval = setInterval(() => {
                 if (startTime > 0) {
                     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
                     if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
                         clearInterval(checkInterval);
-                        timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-                        btn.disabled = false;
-                        btn.className = "btn btn-claim";
-                        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-                        btn.onclick = claimReward;
+                        if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.className = "btn btn-claim";
+                            btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+                            btn.onclick = claimReward;
+                        }
                     }
                 }
             }, 1000);
