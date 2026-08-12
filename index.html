@@ -3,50 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mall Games App Rewards</title>
+    <title>Mall Games App</title>
+    <!-- مكتبة تليجرام -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            text-align: center;
-            padding: 20px;
-            margin: 0;
-        }
-        .card {
-            background-color: #1e1e1e;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            max-width: 400px;
-            margin: 20px auto;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding: 20px; margin: 0; }
+        .card { background-color: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 400px; margin: 20px auto; }
         h1 { font-size: 22px; color: #0088cc; }
-        p { font-size: 15px; color: #cccccc; line-height: 1.6; }
-        .btn {
-            display: block;
-            width: 90%;
-            padding: 14px;
-            margin: 15px auto;
-            background-color: #0088cc;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn:hover { background-color: #006699; }
+        .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
         .btn-adsterra { background-color: #ff9800; }
-        .btn-adsterra:hover { background-color: #e68a00; }
-        .btn:disabled { background-color: #555555; cursor: not-allowed; }
-        .btn-claim { background-color: #4CAF50; }
-        .btn-claim:hover { background-color: #45a049; }
         .hidden { display: none; }
-        .timer-text { font-weight: bold; color: #ff9800; font-size: 15px; margin-top: 10px; }
+        .timer-text { font-weight: bold; color: #ff9800; font-size: 16px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -56,10 +23,9 @@
         
         <div id="telegram-view" class="hidden">
             <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">مستخدم</b> 👋</p>
-            <p>اختر إحدى الطرق التالية لجمع النقاط فوراً:</p>
             
             <a href="https://www.fastsvr.com/wall/UG2x1" class="btn" target="_blank">
-                🎯 إكمال المهام والعروض (نقاط عالية)
+                🎯 إكمال المهام والعروض
             </a>
             
             <button id="ad-btn" class="btn btn-adsterra" onclick="startAdProcess()">
@@ -70,10 +36,7 @@
         </div>
 
         <div id="browser-view" class="hidden">
-            <p>لكسب النقاط وسحب المكافآت، يجب عليك فتح البوت وتأكيد حسابك عبر التليجرام.</p>
-            <a href="https://t.me/mallgames_bot" class="btn">
-                📲 تسجيل الدخول عبر Telegram
-            </a>
+            <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
         </div>
     </div>
 
@@ -83,8 +46,7 @@
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
             tg.expand();
             document.getElementById('telegram-view').classList.remove('hidden');
-            const user = tg.initDataUnsafe.user;
-            document.getElementById('user-name').innerText = user.first_name || "المستخدم";
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "المستخدم";
         } else {
             document.getElementById('browser-view').classList.remove('hidden');
         }
@@ -92,54 +54,44 @@
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
         let timeLeft = 15;
         let timerInterval = null;
-        let isAdOpened = false;
 
         function startAdProcess() {
             window.open(adUrl, '_blank');
-            isAdOpened = true;
 
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
             
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ يرجى البقاء في صفحة الإعلان لمتابعة العداد (${timeLeft} ثانية)...`;
+            timerStatus.innerText = `⏳ يرجى البقاء في صفحة الإعلان... (15 ثانية)`;
 
-            // احتساب الوقت فقط إذا كان المستخدم خارج هذه الصفحة (أي في صفحة الإعلان)
-            if (timerInterval) clearInterval(timerInterval);
-            
             timerInterval = setInterval(() => {
-                // إذا عاد المستخدم للتطبيق قبل انتهاء الوقت
-                if (document.visibilityState === 'visible' && timeLeft > 0) {
-                    timerStatus.innerText = `⚠️ لقد عدت مبكراً! يرجى العودة لصفحة الإعلان لإكمال العداد (${timeLeft} ثانية)...`;
-                } else if (document.visibilityState === 'hidden' && timeLeft > 0) {
+                // إذا كان المستخدم لا يزال خارج التطبيق (أي في الإعلان)
+                if (document.visibilityState === 'hidden') {
                     timeLeft--;
+                    timerStatus.innerText = `⏳ جاري احتساب الوقت... (${timeLeft} ثانية)`;
+                } else if (timeLeft < 15 && timeLeft > 0) {
+                    timerStatus.innerText = `⚠️ عدت مبكراً! يرجى العودة للإعلان (${timeLeft} ثانية)`;
                 }
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    timerStatus.innerText = "🎉 اكتملت مشاهدة الإعلان بنجاح!";
-                    btn.disabled = false;
-                    btn.className = "btn btn-claim";
-                    btn.innerText = "✅ اضغط هنا لإرسال النقاط للبوت";
-                    btn.onclick = claimPoints;
+                    timerStatus.innerText = "✅ تمت العملية! يتم إغلاق التطبيق...";
+                    
+                    // إرسال النقاط للبوت تلقائياً
+                    if (tg) {
+                        tg.sendData(JSON.stringify({
+                            action: "add_points",
+                            points: 10
+                        }));
+                        // إغلاق التطبيق تلقائياً
+                        setTimeout(() => { tg.close(); }, 1000);
+                    } else {
+                        alert("تمت إضافة النقاط!");
+                    }
                 }
             }, 1000);
         }
-
-        function claimPoints() {
-            if (tg) {
-                // إرسال بيئة بيانات حقيقية للبوت لتحديث الرصيد في السيرفر
-                tg.sendData(JSON.stringify({
-                    action: "add_points",
-                    points: 10,
-                    source: "adsterra_ad"
-                }));
-            } else {
-                alert("تم إضافة النقاط!");
-            }
-        }
     </script>
-
 </body>
 </html>
