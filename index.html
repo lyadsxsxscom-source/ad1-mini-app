@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mall Games App</title>
   
-  <!-- مكتبة تليجرام -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <style>
@@ -17,33 +16,15 @@
       margin: 0;
       text-align: center;
     }
-    .container {
-      max-width: 400px;
-      margin: 0 auto;
-    }
+    .container { max-width: 400px; margin: 0 auto; }
     .hidden { display: none !important; }
     
-    .welcome-box {
-      font-size: 18px;
-      margin-bottom: 20px;
-      font-weight: bold;
-      color: #38bdf8;
-    }
+    .welcome-box { font-size: 18px; margin-bottom: 20px; font-weight: bold; color: #38bdf8; }
     
     .btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      margin: 12px 0;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      box-sizing: border-box;
-      color: #ffffff;
-      transition: opacity 0.2s ease;
+      display: block; width: 100%; padding: 14px; margin: 12px 0; border: none; border-radius: 10px;
+      font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none;
+      box-sizing: border-box; color: #ffffff; transition: opacity 0.2s ease;
     }
     .btn:active { opacity: 0.8; }
     
@@ -52,41 +33,39 @@
     .btn-cpx { background-color: #0088cc; }
     .btn-claim { background-color: #ec4899; }
     
-    .timer-status {
-      margin-top: -6px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      color: #facc15;
-    }
+    .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
+    
+    /* تصميم تنبيه الـ VPN */
+    .vpn-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
 
   <div class="container">
+    <!-- تنبيه الـ VPN -->
+    <div id="vpn-view" class="hidden">
+      <div class="vpn-alert">⚠️ تم اكتشاف VPN! يرجى إيقاف الـ VPN للمتابعة.</div>
+    </div>
+
     <!-- قسم العرض المخصص للتليجرام -->
     <div id="telegram-view" class="hidden">
       <div class="welcome-box">
         مرحباً بك، <span id="user-name">المستخدم</span> 👋
       </div>
 
-      <!-- 1️⃣ زر جدار العروض FastSvr -->
-      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">
-        🔥 تنفيذ العروض (FastSvr)
-      </a>
+      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
 
-      <!-- 2️⃣ زر مشاهدة الإعلان -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
         🎬 مشاهدة إعلان (+10 نقاط)
       </button>
       <div id="timer-status" class="timer-status hidden"></div>
 
-      <!-- 3️⃣ زر استبيانات CPX Research -->
       <button onclick="openCpxSurveys()" class="btn btn-cpx">
         📋 استبيانات CPX Research
       </button>
     </div>
 
-    <!-- قسم العرض في حال فتح الرابط من متصفح عادي خارج تليجرام -->
+    <!-- قسم المتصفح -->
     <div id="browser-view" class="hidden">
       <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
     </div>
@@ -95,44 +74,47 @@
   <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-    if (tg) {
-      tg.ready();
+    // --- 1. فحص الـ VPN ---
+    async function checkVPN() {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        if (data.proxy || data.hosting) return true;
+      } catch (e) { console.log("تجاوز الفحص"); }
+      return false;
+    }
+
+    // --- 2. تهيئة التطبيق الأساسية ---
+    async function initApp() {
+      if (!tg) {
+        document.getElementById('browser-view').classList.remove('hidden');
+        return;
+      }
+
+      tg.ready(); 
       tg.expand();
+
+      // التحقق من الـ VPN أولاً
+      const isVPN = await checkVPN();
+      if (isVPN) {
+        document.getElementById('vpn-view').classList.remove('hidden');
+        return;
+      }
+
+      // إذا كان كل شيء سليم، أظهر الواجهة
       document.getElementById('telegram-view').classList.remove('hidden');
       
-      // --- كود التتبع الذكي للعروض (FastSvr) ---
       const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
       const linkElement = document.getElementById('offerwall-link');
-      
-      if (linkElement) {
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-          const userId = tg.initDataUnsafe.user.id;
-          linkElement.href = offerwallBase + "?subid=" + userId; 
-        } else {
-          linkElement.href = offerwallBase;
-        }
-      }
-    } else {
-      document.getElementById('browser-view').classList.remove('hidden');
+      if (linkElement && tg.initDataUnsafe?.user) {
+        linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
+      } else if(linkElement) { linkElement.href = offerwallBase; }
+
+      // بدء البحث عن اسم المستخدم (باستخدام المنطق الأصلي الذي تفضله)
+      startUsernameInterval();
     }
 
-    // --- دالة فتح استبيانات CPX Research ---
-    function openCpxSurveys() {
-      let userId = '123456';
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        userId = tg.initDataUnsafe.user.id;
-      }
-
-      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
-
-      if (tg && tg.openLink) {
-        tg.openLink(cpxUrl);
-      } else {
-        window.open(cpxUrl, '_blank');
-      }
-    }
-
-    // --- دالة جلب وعرض اسم المستخدم ---
+    // --- 3. منطق اسم المستخدم (الأصلي) ---
     function getUserName() {
       const urlParams = new URLSearchParams(window.location.search);
       const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
@@ -143,55 +125,73 @@
       return null;
     }
 
-    let nameFound = false;
-    let checkCount = 0;
-    const nameInterval = setInterval(() => {
-      checkCount++;
-      const name = getUserName();
-      if (name) {
-        const userNameElem = document.getElementById('user-name');
-        if (userNameElem) userNameElem.innerText = name;
-        nameFound = true;
-        clearInterval(nameInterval);
-      } else if (checkCount > 40) {
-        clearInterval(nameInterval);
-        const userNameElem = document.getElementById('user-name');
-        if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
-      }
-    }, 100);
+    function startUsernameInterval() {
+      let nameFound = false;
+      let checkCount = 0;
+      const nameInterval = setInterval(() => {
+        checkCount++;
+        const name = getUserName();
+        if (name) {
+          const userNameElem = document.getElementById('user-name');
+          if (userNameElem) userNameElem.innerText = name;
+          nameFound = true;
+          clearInterval(nameInterval);
+        } else if (checkCount > 40) {
+          clearInterval(nameInterval);
+          const userNameElem = document.getElementById('user-name');
+          if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
+        }
+      }, 100);
+    }
 
-    // --- كود مشاهدة الإعلانات وحساب الوقت ---
+    // --- 4. منطق الإعلانات المحدث (قوي وبدون أخطاء) ---
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-    let startTime = 0;
     const REQUIRED_SECONDS = 30;
     let checkInterval = null;
     let adWindow = null;
 
     function startAdProcess() {
-      startTime = Date.now();
+      let startTime = Date.now();
       adWindow = window.open(adUrl, '_blank');
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
-      if (btn) btn.disabled = true;
-      if (timerStatus) {
-        timerStatus.classList.remove('hidden');
-        timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
-      }
+      
+      btn.disabled = true;
+      timerStatus.classList.remove('hidden');
+      timerStatus.style.color = "#facc15";
+      timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
+      
       if (checkInterval) clearInterval(checkInterval);
+      
       checkInterval = setInterval(() => {
-        if (startTime > 0) {
-          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
-            clearInterval(checkInterval);
-            if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-            if (btn) {
-              btn.disabled = false;
-              btn.className = "btn btn-claim";
-              btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-              btn.onclick = claimReward;
-            }
-          }
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = REQUIRED_SECONDS - elapsed;
+
+        // حالة النجاح
+        if (remaining <= 0) {
+          clearInterval(checkInterval);
+          timerStatus.style.color = "#10b981";
+          timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
+          btn.disabled = false;
+          btn.className = "btn btn-claim";
+          btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+          btn.onclick = claimReward;
+          return;
         }
+
+        // حالة الخروج (مع فترة سماح 5 ثوانٍ لمنع الخطأ أثناء التحميل)
+        if (elapsed > 5 && adWindow && adWindow.closed) {
+          clearInterval(checkInterval);
+          timerStatus.style.color = "#ef4444";
+          timerStatus.innerText = "❌ غادرت قبل الوقت! حاول مجدداً";
+          btn.disabled = false;
+          btn.className = "btn btn-ad";
+          btn.innerText = "🎬 مشاهدة إعلان (+10 نقاط)";
+          btn.onclick = startAdProcess;
+          return;
+        }
+
+        timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... لا تغلق الصفحة!`;
       }, 1000);
     }
 
@@ -202,6 +202,15 @@
         setTimeout(() => { tg.close(); }, 800);
       }
     }
+
+    function openCpxSurveys() {
+      let userId = (tg && tg.initDataUnsafe?.user) ? tg.initDataUnsafe.user.id : '123456';
+      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
+      tg?.openLink ? tg.openLink(cpxUrl) : window.open(cpxUrl, '_blank');
+    }
+
+    // تشغيل التهيئة
+    window.onload = initApp;
   </script>
 </body>
 </html>
