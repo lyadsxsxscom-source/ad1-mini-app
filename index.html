@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mall Games App</title>
   
-  <!-- مكتبة تليجرام -->
+  <!-- مكتبة تليجرام WebApp -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <style>
@@ -49,31 +49,36 @@
   <div class="container">
     <!-- شاشة التحميل -->
     <div id="loading-view">
-      <p style="color: #38bdf8;">⏳ جاري التحقق من الأمان...</p>
+      <p style="color: #38bdf8;">⏳ جاري التحقق من أمان الاتصال...</p>
     </div>
 
-    <!-- شاشة الحظر -->
+    <!-- شاشة الحظر عند اكتشاف VPN -->
     <div id="vpn-view" class="hidden">
       <div class="vpn-box">
-        <h2>⚠️ تم اكتشاف VPN</h2>
-        <p>عذراً، يرجى إيقاف الـ VPN للمتابعة.</p>
+        <h2>⚠️ تم اكتشاف VPN / Proxy</h2>
+        <p>عذراً، لا يمكنك استخدام التطبيق أثناء تشغيل الـ VPN.</p>
+        <p><strong>يرجى إيقاف الـ VPN وإعادة فتح التطبيق.</strong></p>
       </div>
     </div>
 
-    <!-- المحتوى الرئيسي -->
+    <!-- الواجهة الرئيسية للتليجرام -->
     <div id="telegram-view" class="hidden">
       <div class="welcome-box">مرحباً بك، <span id="user-name">المستخدم</span> 👋</div>
 
+      <!-- 1️⃣ زر جدار العروض FastSvr -->
       <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
       
+      <!-- 2️⃣ زر مشاهدة الإعلان -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">🎬 مشاهدة إعلان (+10 نقاط)</button>
       <div id="timer-status" class="timer-status hidden"></div>
 
+      <!-- 3️⃣ زر استبيانات CPX Research -->
       <button onclick="openCpxSurveys()" class="btn btn-cpx">📋 استبيانات CPX Research</button>
     </div>
 
+    <!-- شاشة العرض الخارجية -->
     <div id="browser-view" class="hidden">
-      <p>يرجى فتح البوت عبر التليجرام.</p>
+      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
     </div>
   </div>
 
@@ -83,7 +88,7 @@
     let adWindow = null;
     let checkInterval = null;
 
-    // 🛡️ فحص الـ VPN
+    // 🛡️ فحص الـ VPN عند فتح الصفحة
     async function verifySecurityAndInit() {
       try {
         const res = await fetch('https://ipapi.co/json/');
@@ -93,26 +98,31 @@
           document.getElementById('vpn-view').classList.remove('hidden');
           return;
         }
-      } catch (err) { console.log("تجاوز الفحص"); }
+      } catch (err) { 
+        console.log("تجاوز الفحص في حال فشل السيرفر"); 
+      }
 
       document.getElementById('loading-view').classList.add('hidden');
       initApp();
     }
 
-    // 🚀 بدء التطبيق
+    // 🚀 تهيئة التطبيق
     function initApp() {
       if (tg) {
-        tg.ready(); tg.expand();
+        tg.ready(); 
+        tg.expand();
         document.getElementById('telegram-view').classList.remove('hidden');
+        
         const userId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "guest";
         document.getElementById('offerwall-link').href = "https://www.fastsvr.com/wall/UG2x1?subid=" + userId;
+        
         startFetchingName();
       } else {
         document.getElementById('browser-view').classList.remove('hidden');
       }
     }
 
-    // 🎬 نظام الإعلانات المحمي
+    // 🎬 نظام الإعلانات المطور (دقيق وبفترة سماح)
     function startAdProcess() {
       let startTime = Date.now();
       const REQUIRED_SECONDS = 30;
@@ -128,32 +138,39 @@
       if (checkInterval) clearInterval(checkInterval);
 
       checkInterval = setInterval(() => {
-        // فحص هل الإعلان لا يزال مفتوحاً
-        if (adWindow && adWindow.closed) {
-          clearInterval(checkInterval);
-          timerStatus.style.color = "#ef4444";
-          timerStatus.innerText = "❌ لقد أغلقت الإعلان قبل الوقت!";
-          btn.disabled = false;
-          return;
-        }
-
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const remaining = REQUIRED_SECONDS - elapsed;
 
-        if (remaining > 0) {
-          timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... لا تغلق الصفحة!`;
-        } else {
+        // 1️⃣ الأولوية الأولى: إكمال الوقت بنجاح
+        if (remaining <= 0) {
           clearInterval(checkInterval);
           timerStatus.style.color = "#10b981";
-          timerStatus.innerText = "🎉 تم! اضغط للتحصيل 👇";
+          timerStatus.innerText = "🎉 تم المشاهدة بنجاح! اضغط للتحصيل 👇";
           btn.disabled = false;
           btn.className = "btn btn-claim";
           btn.innerText = "🎁 استلام المكافأة (+10 نقاط)";
           btn.onclick = claimReward;
+          return;
         }
+
+        // 2️⃣ الأولوية الثانية: التحقق من إغلاق الصفحة (بعد مرور 3 ثوانٍ)
+        if (elapsed > 3 && adWindow && adWindow.closed) {
+          clearInterval(checkInterval);
+          timerStatus.style.color = "#ef4444";
+          timerStatus.innerText = "❌ لقد أغلقت الإعلان قبل الوقت!";
+          btn.disabled = false;
+          btn.className = "btn btn-ad";
+          btn.innerText = "🎬 مشاهدة إعلان (+10 نقاط)";
+          btn.onclick = startAdProcess;
+          return;
+        }
+
+        // تحديث نص العداد
+        timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... لا تغلق الصفحة!`;
       }, 1000);
     }
 
+    // 🎁 دالة استلام النقاط
     function claimReward() {
       if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
       if (tg) {
@@ -162,18 +179,20 @@
       }
     }
 
-    // دوال مساعدة
+    // 📋 دالة فتح استبيانات CPX
     function openCpxSurveys() {
       const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '123456';
       const url = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
-      tg ? tg.openLink(url) : window.open(url, '_blank');
+      tg && tg.openLink ? tg.openLink(url) : window.open(url, '_blank');
     }
 
+    // 👤 جلب اسم المستخدم
     function startFetchingName() {
-      const name = (tg && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : "المستخدم";
+      const name = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : "المستخدم";
       document.getElementById('user-name').innerText = name;
     }
 
+    // تشغيل الفحص عند تحميل الصفحة
     window.onload = verifySecurityAndInit;
   </script>
 </body>
