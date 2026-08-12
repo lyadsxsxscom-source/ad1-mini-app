@@ -44,28 +44,29 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        function loadUserData() {
-            if (tg) {
-                tg.ready();
-                tg.expand();
-                document.getElementById('telegram-view').classList.remove('hidden');
-                
-                // جلب اسم المستخدم بذكاء فور توفره من التليجرام
-                const user = tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
-                if (user && user.first_name) {
-                    document.getElementById('user-name').innerText = user.first_name;
-                } else {
-                    document.getElementById('user-name').innerText = "المستخدم";
-                }
-            } else {
-                document.getElementById('browser-view').classList.remove('hidden');
-            }
+        // إظهار الواجهة فوراً
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            document.getElementById('telegram-view').classList.remove('hidden');
+        } else {
+            document.getElementById('browser-view').classList.remove('hidden');
         }
 
-        // تشغيل الجلب فوراً
-        loadUserData();
-        // إعادة التأكيد بعد 200 ميلي ثانية لضمان قراءة الاسم
-        setTimeout(loadUserData, 200);
+        // محاولة جلب الاسم بشكل مستمر لمدة 3 ثوانٍ حتى يصل من التليجرام
+        let attempts = 0;
+        const nameCheckInterval = setInterval(() => {
+            attempts++;
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
+                document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
+                clearInterval(nameCheckInterval); // التوقف فور العثور على الاسم
+            } else if (attempts > 30) { // بعد 3 ثوانٍ كحد أقصى
+                clearInterval(nameCheckInterval);
+                if (document.getElementById('user-name').innerText === '...') {
+                    document.getElementById('user-name').innerText = "المستخدم";
+                }
+            }
+        }, 100);
 
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
         let startTime = 0;
