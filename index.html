@@ -66,7 +66,6 @@
             timerStatus.innerText = `⏳ يرجى البقاء في صفحة الإعلان... (15 ثانية)`;
 
             timerInterval = setInterval(() => {
-                // إذا كان المستخدم لا يزال خارج التطبيق (أي في الإعلان)
                 if (document.visibilityState === 'hidden') {
                     timeLeft--;
                     timerStatus.innerText = `⏳ جاري احتساب الوقت... (${timeLeft} ثانية)`;
@@ -76,18 +75,37 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    timerStatus.innerText = "✅ تمت العملية! يتم إغلاق التطبيق...";
+                    timerStatus.innerText = "⏳ جاري إرسال النقاط لحسابك...";
                     
-                    // إرسال النقاط للبوت تلقائياً
-                    if (tg) {
-                        tg.sendData(JSON.stringify({
-                            action: "add_points",
-                            points: 10
-                        }));
-                        // إغلاق التطبيق تلقائياً
-                        setTimeout(() => { tg.close(); }, 1000);
+                    const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : null;
+
+                    if (userId) {
+                        // إرسال طلب أوتوماتيكي لسيرفر PythonAnywhere الخاص بك
+                        fetch('https://IbrahimKazmoz.pythonanywhere.com/api/add-points', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                user_id: userId,
+                                amount: 0.0050 // قيمة الإعلان بالدولار
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                timerStatus.innerText = "✅ تمت إضافة النقاط لرصيدك بنجاح!";
+                                setTimeout(() => { if (tg) tg.close(); }, 1500);
+                            } else {
+                                timerStatus.innerText = "❌ حدث خطأ أثناء احتساب النقاط.";
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            timerStatus.innerText = "❌ تعذر الاتصال بالسيرفر.";
+                        });
                     } else {
-                        alert("تمت إضافة النقاط!");
+                        alert("تمت العملية لكن تعذر التعرف على حساب التليجرام!");
                     }
                 }
             }, 1000);
