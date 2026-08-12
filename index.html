@@ -23,7 +23,7 @@
         <h1>مرحباً بك في Mall Games App! 🎁</h1>
         
         <div id="telegram-view" class="hidden">
-            <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">مستخدم</b> 👋</p>
+            <p>أهلاً بك يا <b id="user-name" style="color: #0088cc;">...</b> 👋</p>
             
             <a href="https://www.fastsvr.com/wall/UG2x1" class="btn" target="_blank">
                 🎯 إكمال المهام والعروض
@@ -44,25 +44,35 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            document.getElementById('telegram-view').classList.remove('hidden');
-            
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "المستخدم";
+        function loadUserData() {
+            if (tg) {
+                tg.ready();
+                tg.expand();
+                document.getElementById('telegram-view').classList.remove('hidden');
+                
+                // جلب اسم المستخدم بذكاء فور توفره من التليجرام
+                const user = tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+                if (user && user.first_name) {
+                    document.getElementById('user-name').innerText = user.first_name;
+                } else {
+                    document.getElementById('user-name').innerText = "المستخدم";
+                }
+            } else {
+                document.getElementById('browser-view').classList.remove('hidden');
             }
-        } else {
-            document.getElementById('browser-view').classList.remove('hidden');
         }
+
+        // تشغيل الجلب فوراً
+        loadUserData();
+        // إعادة التأكيد بعد 200 ميلي ثانية لضمان قراءة الاسم
+        setTimeout(loadUserData, 200);
 
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
         let startTime = 0;
         const REQUIRED_SECONDS = 15;
         let checkInterval = null;
-        let adWindow = null; // الاحتفاظ بنادفة الإعلان لإغلاقها
+        let adWindow = null;
 
-        // دالة تشغيل صوت التنبيه
         function playSuccessSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -71,8 +81,8 @@
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // نغمة أولى
-                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // نغمة ثانية أعلى
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
                 gain.gain.setValueAtTime(0.3, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
                 osc.start();
@@ -82,13 +92,10 @@
             }
         }
 
-        // دالة اهتزاز الهاتف
         function triggerVibration() {
-            // اهتزاز التليجرام الرسمي
             if (tg && tg.HapticFeedback) {
                 tg.HapticFeedback.notificationOccurred('success');
             }
-            // اهتزاز المتصفح العادي
             if (navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
             }
@@ -96,7 +103,7 @@
 
         function startAdProcess() {
             startTime = Date.now();
-            adWindow = window.open(adUrl, '_blank'); // فتح صفحة الإعلان
+            adWindow = window.open(adUrl, '_blank');
 
             const btn = document.getElementById('ad-btn');
             const timerStatus = document.getElementById('timer-status');
@@ -115,7 +122,6 @@
                     if (remaining <= 0) {
                         clearInterval(checkInterval);
                         
-                        // 🔊 تشغيل الصوت + 📳 اهتزاز الهاتف عند انتهاء الوقت!
                         playSuccessSound();
                         triggerVibration();
 
@@ -138,7 +144,6 @@
             const timerStatus = document.getElementById('timer-status');
             timerStatus.innerText = "⏳ جاري تحويل النقاط إلى حسابك...";
 
-            // محاولة إغلاق صفحة الإعلان تلقائياً
             if (adWindow && !adWindow.closed) {
                 try { adWindow.close(); } catch(e) {}
             }
