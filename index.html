@@ -10,7 +10,7 @@
         body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding: 20px; margin: 0; }
         .card { background-color: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 400px; margin: 20px auto; }
         h1 { font-size: 22px; color: #0088cc; }
-        .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
+        .btn { display: block; width: 90%; padding: 14px; margin: 15px auto; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; box-sizing: border-box; }
         .btn-adsterra { background-color: #ff9800; }
         .btn-claim { background-color: #4CAF50 !important; font-size: 17px; box-shadow: 0 0 10px #4CAF50; }
         .hidden { display: none; }
@@ -44,7 +44,6 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        // إظهار الواجهة فوراً
         if (tg) {
             tg.ready();
             tg.expand();
@@ -53,16 +52,33 @@
             document.getElementById('browser-view').classList.remove('hidden');
         }
 
-        // محاولة جلب الاسم بشكل مستمر لمدة 3 ثوانٍ حتى يصل من التليجرام
-        let attempts = 0;
-        const nameCheckInterval = setInterval(() => {
-            attempts++;
+        // دالة جلب الاسم الذكية (تقرأ الاسم من الرابط أو من تليجرام مباشرة)
+        function getUserName() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+            if (nameFromUrl) {
+                return decodeURIComponent(nameFromUrl);
+            }
             if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
-                document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
-                clearInterval(nameCheckInterval); // التوقف فور العثور على الاسم
-            } else if (attempts > 30) { // بعد 3 ثوانٍ كحد أقصى
-                clearInterval(nameCheckInterval);
-                if (document.getElementById('user-name').innerText === '...') {
+                return tg.initDataUnsafe.user.first_name;
+            }
+            return null;
+        }
+
+        let nameFound = false;
+        let checkCount = 0;
+
+        const nameInterval = setInterval(() => {
+            checkCount++;
+            const name = getUserName();
+            
+            if (name) {
+                document.getElementById('user-name').innerText = name;
+                nameFound = true;
+                clearInterval(nameInterval);
+            } else if (checkCount > 40) {
+                clearInterval(nameInterval);
+                if (!nameFound && document.getElementById('user-name').innerText === '...') {
                     document.getElementById('user-name').innerText = "المستخدم";
                 }
             }
