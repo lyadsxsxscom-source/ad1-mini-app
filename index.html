@@ -95,7 +95,7 @@
         // كود الإعلانات
         const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
         let startTime = 0;
-        const REQUIRED_SECONDS = 15;
+        const REQUIRED_SECONDS = 30;
         let checkInterval = null;
         let adWindow = null;
 
@@ -106,7 +106,7 @@
             const timerStatus = document.getElementById('timer-status');
             btn.disabled = true;
             timerStatus.classList.remove('hidden');
-            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 15 ثانية...`;
+            timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
             if (checkInterval) clearInterval(checkInterval);
             checkInterval = setInterval(() => {
                 if (startTime > 0) {
