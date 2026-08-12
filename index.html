@@ -17,33 +17,15 @@
       margin: 0;
       text-align: center;
     }
-    .container {
-      max-width: 400px;
-      margin: 0 auto;
-    }
+    .container { max-width: 400px; margin: 0 auto; }
     .hidden { display: none !important; }
     
-    .welcome-box {
-      font-size: 18px;
-      margin-bottom: 20px;
-      font-weight: bold;
-      color: #38bdf8;
-    }
+    .welcome-box { font-size: 18px; margin-bottom: 20px; font-weight: bold; color: #38bdf8; }
     
     .btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      margin: 12px 0;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      box-sizing: border-box;
-      color: #ffffff;
-      transition: opacity 0.2s ease;
+      display: block; width: 100%; padding: 14px; margin: 12px 0; border: none; border-radius: 10px;
+      font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none;
+      box-sizing: border-box; color: #ffffff; transition: opacity 0.2s ease;
     }
     .btn:active { opacity: 0.8; }
     
@@ -52,214 +34,122 @@
     .btn-cpx { background-color: #0088cc; }
     .btn-claim { background-color: #ec4899; }
     
-    .timer-status {
-      margin-top: -6px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      color: #facc15;
-    }
+    .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
 
-    /* تصميم شاشة حظر الـ VPN */
+    /* شاشة حظر الـ VPN */
     .vpn-box {
-      background-color: #3f1d24;
-      border: 2px solid #ef4444;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 20px;
+      background-color: #3f1d24; border: 2px solid #ef4444;
+      border-radius: 12px; padding: 20px; margin-top: 20px;
     }
-    .vpn-box h2 {
-      color: #f87171;
-      margin-top: 0;
-      font-size: 20px;
-    }
-    .vpn-box p {
-      color: #fca5a5;
-      font-size: 15px;
-      line-height: 1.5;
-    }
+    .vpn-box h2 { color: #f87171; margin-top: 0; font-size: 20px; }
   </style>
 </head>
 <body>
 
   <div class="container">
-
-    <!-- شاشة الانتظار أثناء فحص الـ VPN -->
+    <!-- شاشة التحميل -->
     <div id="loading-view">
-      <p style="color: #38bdf8; font-size: 16px;">⏳ جاري التحقق من أمان الاتصال...</p>
+      <p style="color: #38bdf8;">⏳ جاري التحقق من الأمان...</p>
     </div>
 
-    <!-- شاشة الحظر عند فتح الـ VPN -->
+    <!-- شاشة الحظر -->
     <div id="vpn-view" class="hidden">
       <div class="vpn-box">
-        <h2>⚠️ تم اكتشاف VPN / Proxy</h2>
-        <p>عذراً، لا يمكنك استخدام التطبيق أثناء تشغيل الـ VPN أو برامج تغيير الموقع.</p>
-        <p><strong>يرجى إغلاق الـ VPN وإعادة فتح التطبيق للمتابعة.</strong></p>
+        <h2>⚠️ تم اكتشاف VPN</h2>
+        <p>عذراً، يرجى إيقاف الـ VPN للمتابعة.</p>
       </div>
     </div>
 
-    <!-- قسم العرض المخصص للتليجرام (يظهر فقط إذا كان الاتصال بدون VPN) -->
+    <!-- المحتوى الرئيسي -->
     <div id="telegram-view" class="hidden">
-      <div class="welcome-box">
-        مرحباً بك، <span id="user-name">المستخدم</span> 👋
-      </div>
+      <div class="welcome-box">مرحباً بك، <span id="user-name">المستخدم</span> 👋</div>
 
-      <!-- 1️⃣ زر جدار العروض FastSvr -->
-      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">
-        🔥 تنفيذ العروض (FastSvr)
-      </a>
-
-      <!-- 2️⃣ زر مشاهدة الإعلان -->
-      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
-        🎬 مشاهدة إعلان (+10 نقاط)
-      </button>
+      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
+      
+      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">🎬 مشاهدة إعلان (+10 نقاط)</button>
       <div id="timer-status" class="timer-status hidden"></div>
 
-      <!-- 3️⃣ زر استبيانات CPX Research -->
-      <button onclick="openCpxSurveys()" class="btn btn-cpx">
-        📋 استبيانات CPX Research
-      </button>
+      <button onclick="openCpxSurveys()" class="btn btn-cpx">📋 استبيانات CPX Research</button>
     </div>
 
-    <!-- قسم العرض في حال فتح الرابط من متصفح عادي خارج تليجرام -->
     <div id="browser-view" class="hidden">
-      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
+      <p>يرجى فتح البوت عبر التليجرام.</p>
     </div>
-
   </div>
 
   <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
+    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+    let adWindow = null;
+    let checkInterval = null;
 
-    // --- 🛡️ نظام فحص الـ VPN الصارم ---
+    // 🛡️ فحص الـ VPN
     async function verifySecurityAndInit() {
-      const loadingView = document.getElementById('loading-view');
-      const vpnView = document.getElementById('vpn-view');
-
       try {
-        // الفحص عبر apiip.co السريعة والمحمية بـ HTTPS
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
-
-        // في حال تم اكتشاف Proxy أو Hosting (VPN)
-        if (data.proxy || data.hosting || data.security?.is_proxy) {
-          loadingView.classList.add('hidden');
-          vpnView.classList.remove('hidden');
-          return; // إيقاف تشغيل بقية التطبيق فوراً
+        if (data.proxy || data.hosting) {
+          document.getElementById('loading-view').classList.add('hidden');
+          document.getElementById('vpn-view').classList.remove('hidden');
+          return;
         }
-      } catch (err) {
-        console.log("تجاوز الفحص في حال تعذر السيرفر للضرورة");
-      }
+      } catch (err) { console.log("تجاوز الفحص"); }
 
-      // إخفاء التحميل والبدء في عرض الأزرار
-      loadingView.classList.add('hidden');
+      document.getElementById('loading-view').classList.add('hidden');
       initApp();
     }
 
-    // --- تشغيل التطبيق بعد تجاوز فحص الـ VPN بنجاح ---
+    // 🚀 بدء التطبيق
     function initApp() {
       if (tg) {
-        tg.ready();
-        tg.expand();
+        tg.ready(); tg.expand();
         document.getElementById('telegram-view').classList.remove('hidden');
-        
-        // --- كود التتبع الذكي للعروض (FastSvr) ---
-        const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
-        const linkElement = document.getElementById('offerwall-link');
-        
-        if (linkElement) {
-          if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const userId = tg.initDataUnsafe.user.id;
-            linkElement.href = offerwallBase + "?subid=" + userId; 
-          } else {
-            linkElement.href = offerwallBase;
-          }
-        }
-
-        // تشغيل جلب اسم المستخدم
+        const userId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "guest";
+        document.getElementById('offerwall-link').href = "https://www.fastsvr.com/wall/UG2x1?subid=" + userId;
         startFetchingName();
-
       } else {
         document.getElementById('browser-view').classList.remove('hidden');
       }
     }
 
-    // --- دالة فتح استبيانات CPX Research ---
-    function openCpxSurveys() {
-      let userId = '123456';
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        userId = tg.initDataUnsafe.user.id;
-      }
-
-      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
-
-      if (tg && tg.openLink) {
-        tg.openLink(cpxUrl);
-      } else {
-        window.open(cpxUrl, '_blank');
-      }
-    }
-
-    // --- دالة جلب وعرض اسم المستخدم ---
-    function getUserName() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
-        return tg.initDataUnsafe.user.first_name;
-      }
-      return null;
-    }
-
-    function startFetchingName() {
-      let nameFound = false;
-      let checkCount = 0;
-      const nameInterval = setInterval(() => {
-        checkCount++;
-        const name = getUserName();
-        if (name) {
-          const userNameElem = document.getElementById('user-name');
-          if (userNameElem) userNameElem.innerText = name;
-          nameFound = true;
-          clearInterval(nameInterval);
-        } else if (checkCount > 40) {
-          clearInterval(nameInterval);
-          const userNameElem = document.getElementById('user-name');
-          if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
-        }
-      }, 100);
-    }
-
-    // --- كود مشاهدة الإعلانات وحساب الوقت ---
-    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-    let startTime = 0;
-    const REQUIRED_SECONDS = 30;
-    let checkInterval = null;
-    let adWindow = null;
-
+    // 🎬 نظام الإعلانات المحمي
     function startAdProcess() {
-      startTime = Date.now();
+      let startTime = Date.now();
+      const REQUIRED_SECONDS = 30;
       adWindow = window.open(adUrl, '_blank');
+      
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
-      if (btn) btn.disabled = true;
-      if (timerStatus) {
-        timerStatus.classList.remove('hidden');
-        timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
-      }
+      
+      btn.disabled = true;
+      timerStatus.classList.remove('hidden');
+      timerStatus.style.color = "#facc15";
+      
       if (checkInterval) clearInterval(checkInterval);
+
       checkInterval = setInterval(() => {
-        if (startTime > 0) {
-          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          if (REQUIRED_SECONDS - elapsedSeconds <= 0) {
-            clearInterval(checkInterval);
-            if (timerStatus) timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-            if (btn) {
-              btn.disabled = false;
-              btn.className = "btn btn-claim";
-              btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-              btn.onclick = claimReward;
-            }
-          }
+        // فحص هل الإعلان لا يزال مفتوحاً
+        if (adWindow && adWindow.closed) {
+          clearInterval(checkInterval);
+          timerStatus.style.color = "#ef4444";
+          timerStatus.innerText = "❌ لقد أغلقت الإعلان قبل الوقت!";
+          btn.disabled = false;
+          return;
+        }
+
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = REQUIRED_SECONDS - elapsed;
+
+        if (remaining > 0) {
+          timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... لا تغلق الصفحة!`;
+        } else {
+          clearInterval(checkInterval);
+          timerStatus.style.color = "#10b981";
+          timerStatus.innerText = "🎉 تم! اضغط للتحصيل 👇";
+          btn.disabled = false;
+          btn.className = "btn btn-claim";
+          btn.innerText = "🎁 استلام المكافأة (+10 نقاط)";
+          btn.onclick = claimReward;
         }
       }, 1000);
     }
@@ -272,7 +162,18 @@
       }
     }
 
-    // تشغيل الفحص فور فتح الصفحة
+    // دوال مساعدة
+    function openCpxSurveys() {
+      const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '123456';
+      const url = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
+      tg ? tg.openLink(url) : window.open(url, '_blank');
+    }
+
+    function startFetchingName() {
+      const name = (tg && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : "المستخدم";
+      document.getElementById('user-name').innerText = name;
+    }
+
     window.onload = verifySecurityAndInit;
   </script>
 </body>
