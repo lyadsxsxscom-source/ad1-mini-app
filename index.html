@@ -51,10 +51,11 @@
 
       <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
 
+      <!-- زر مشاهدة الإعلان -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
         🎬 مشاهدة إعلان (+10 نقاط)
       </button>
-      
+
       <div id="timer-status" class="timer-status hidden"></div>
 
       <button onclick="openCpxSurveys()" class="btn btn-cpx">
@@ -72,8 +73,8 @@
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
     const REQUIRED_SECONDS = 30;
     
-    let timeLeft = REQUIRED_SECONDS;
-    let timerInterval = null;
+    let accumulatedAwayTime = 0; // مجموع الثواني التي قضاها خارج التليجرام
+    let leftTime = null;         // توقيت لحظة الخروج
     let isAdActive = false;
 
     async function checkVPN() {
@@ -132,12 +133,15 @@
       return null;
     }
 
-    // --- 🛡️ منطق حماية العداد منعاً للغش ---
+    // --- 🛡️ منطق الحماية ضد الغش ---
     function startAdProcess() {
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
       
-      // فتح الإعلان
+      isAdActive = true;
+      leftTime = Date.now(); // تسجيل وقت المغادرة فوراً
+
+      // فتح رابط الإعلان
       if (tg && tg.openLink) {
         tg.openLink(adUrl);
       } else {
@@ -146,51 +150,63 @@
 
       btn.disabled = true;
       timerStatus.classList.remove('hidden');
-      
-      timeLeft = REQUIRED_SECONDS;
-      isAdActive = true;
-
-      runTimer();
+      timerStatus.style.color = "#facc15";
+      timerStatus.innerText = "⏳ يرجى البقاء داخل الإعلان لمدة 30 ثانية...";
     }
 
-    function runTimer() {
-      const timerStatus = document.getElementById('timer-status');
+    // حاسبة الوقت عند العودة للتطبيق
+    function handleReturn() {
+      if (!isAdActive || !leftTime) return;
+
+      const now = Date.now();
+      const secondsSpentAway = Math.floor((now - leftTime) / 1000);
       
-      if (timerInterval) clearInterval(timerInterval);
-
-      timerInterval = setInterval(() => {
-        // حماية: إذا خرج المستخدم من التطبيق، قم بإيقاف العداد موقتاً
-        if (document.hidden) {
-          timerStatus.style.color = "#ef4444"; // أحمر
-          timerStatus.innerText = `⚠️ توقف العداد! يجب عليك البقاء داخل صفحة الإعلان.`;
-          return; 
-        }
-
-        timeLeft--;
-        timerStatus.style.color = "#facc15"; // أصفر
-        timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية... قم بمشاهدة الإعلان`;
-
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          isAdActive = false;
-          
-          const btn = document.getElementById('ad-btn');
-          timerStatus.style.color = "#10b981";
-          timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-          btn.disabled = false;
-          btn.className = "btn btn-claim";
-          btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-          btn.onclick = claimReward;
-        }
-      }, 1000);
-    }
-
-    // كشف خروج ودخول المستخدم للتطبيق
-    document.addEventListener("visibilitychange", function() {
-      if (isAdActive && !document.hidden && timeLeft > 0) {
-        // عند عودته للتطبيق يتم استئناف العداد
-        runTimer();
+      if (secondsSpentAway > 0) {
+        accumulatedAwayTime += secondsSpentAway;
       }
+      leftTime = null;
+
+      updateUI();
+    }
+
+    function updateUI() {
+      const btn = document.getElementById('ad-btn');
+      const timerStatus = document.getElementById('timer-status');
+      const remaining = REQUIRED_SECONDS - accumulatedAwayTime;
+
+      if (remaining <= 0) {
+        // تم إكمال الـ 30 ثانية بالكامل خارج التطبيق
+        isAdActive = false;
+        timerStatus.style.color = "#10b981";
+        timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية داخل الإعلان. اضغط للتحصيل 👇";
+        
+        btn.disabled = false;
+        btn.className = "btn btn-claim";
+        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+        btn.onclick = claimReward;
+      } else {
+        // لم يكمل الـ 30 ثانية
+        timerStatus.style.color = "#facc15";
+        timerStatus.innerText = `⏳ بقيت ${accumulatedAwayTime} ثانية في الإعلان. متبقي ${remaining} ثانية!`;
+        
+        btn.disabled = false;
+        btn.className = "btn btn-ad";
+        btn.innerText = `🎬 إكمال مشاهدة الإعلان (متبقي ${remaining} ثانية)`;
+        btn.onclick = startAdProcess;
+      }
+    }
+
+    // كشف لحظة عودة المستخدم للتطبيق
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden) {
+        handleReturn();
+      } else if (isAdActive && !leftTime) {
+        leftTime = Date.now();
+      }
+    });
+
+    window.addEventListener("focus", function() {
+      handleReturn();
     });
 
     function claimReward() {
