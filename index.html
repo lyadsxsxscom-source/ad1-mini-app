@@ -1,192 +1,147 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mall Games App</title>
-  
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #151e27;
-      color: #ffffff;
-      padding: 20px;
-      margin: 0;
-      text-align: center;
-    }
-    .container { max-width: 400px; margin: 0 auto; }
-    .hidden { display: none !important; }
-    
-    .welcome-box { font-size: 18px; margin-bottom: 20px; font-weight: bold; color: #38bdf8; }
-    
-    .btn {
-      display: block; width: 100%; padding: 14px; margin: 12px 0; border: none; border-radius: 10px;
-      font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none;
-      box-sizing: border-box; color: #ffffff; transition: opacity 0.2s ease;
-    }
-    .btn:active { opacity: 0.8; }
-    
-    .btn-offerwall { background-color: #f59e0b; }
-    .btn-ad { background-color: #10b981; }
-    .btn-cpx { background-color: #0088cc; }
-    .btn-claim { background-color: #ec4899; }
-    
-    .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
-    
-    .vpn-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 10px; margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عداد 30 ثانية مع تنبيه</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* تنسيق الإعلان */
+        .ad-container {
+            margin-top: 20px;
+            width: 100%;
+            height: 300px;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fafafa;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <div id="vpn-view" class="hidden">
-      <div class="vpn-alert">⚠️ تم اكتشاف VPN! يرجى إيقاف الـ VPN للمتابعة.</div>
+    <div class="container">
+        <h2>انتظر انتهاء الوقت</h2>
+        <div id="timer">30</div>
+        <button id="startBtn" onclick="startTimer()">بدء العداد</button>
+
+        <!-- منطقة الإعلان -->
+        <div class="ad-container">
+            <!-- يمكنك وضع كود الإعلان الخاص بك هنا -->
+            <p style="color: #777;">[ منطقة عرض الإعلان ]</p>
+        </div>
     </div>
 
-    <div id="telegram-view" class="hidden">
-      <div class="welcome-box">
-        مرحباً بك، <span id="user-name">المستخدم</span> 👋
-      </div>
+    <script>
+        let timeLeft = 30;
+        let timerInterval = null;
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const originalTitle = document.title;
 
-      <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
-
-      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
-        🎬 مشاهدة إعلان (+10 نقاط)
-      </button>
-      <div id="timer-status" class="timer-status hidden"></div>
-
-      <button onclick="openCpxSurveys()" class="btn btn-cpx">
-        📋 استبيانات CPX Research
-      </button>
-    </div>
-
-    <div id="browser-view" class="hidden">
-      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
-    </div>
-  </div>
-
-  <script>
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-    // --- 🔊 كود الصوت المدمج ---
-    // هذا صوت تنبيه قصير (Base64) يعمل بدون إنترنت وبسرعة
-    const audioBeep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-
-    async function checkVPN() {
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        if (data.proxy || data.hosting) return true;
-      } catch (e) { console.log("تجاوز الفحص"); }
-      return false;
-    }
-
-    async function initApp() {
-      if (!tg) {
-        document.getElementById('browser-view').classList.remove('hidden');
-        return;
-      }
-      tg.ready(); 
-      tg.expand();
-      const isVPN = await checkVPN();
-      if (isVPN) {
-        document.getElementById('vpn-view').classList.remove('hidden');
-        return;
-      }
-      document.getElementById('telegram-view').classList.remove('hidden');
-      
-      const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
-      const linkElement = document.getElementById('offerwall-link');
-      if (linkElement && tg.initDataUnsafe?.user) {
-        linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
-      } else if(linkElement) { linkElement.href = offerwallBase; }
-
-      startUsernameInterval();
-    }
-
-    function startUsernameInterval() {
-      let checkCount = 0;
-      const nameInterval = setInterval(() => {
-        checkCount++;
-        const name = getUserName();
-        if (name) {
-          document.getElementById('user-name').innerText = name;
-          clearInterval(nameInterval);
-        } else if (checkCount > 40) {
-          clearInterval(nameInterval);
-          document.getElementById('user-name').innerText = "المستخدم";
+        // دالة تشغيل صوت التنبيه عند الانتهاء (باستخدام Web Audio API بدون الحاجة لمكعبات صوتية خارجية)
+        function playBeepSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // تشغيل نغمتين متتاليتين للتنبيه
+                [0, 0.2, 0.4].forEach(delay => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.value = 880; // تردد الصوت (نغمة عالية مسموعة)
+                    
+                    gain.gain.setValueAtTime(0.1, audioContext.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + delay + 0.15);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.start(audioContext.currentTime + delay);
+                    osc.stop(audioContext.currentTime + delay + 0.15);
+                });
+            } catch (e) {
+                console.log("الصوت غير مدعوم أو يتطلب تفاعل المتصفح أولاً");
+            }
         }
-      }, 100);
-    }
 
-    function getUserName() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
-      return null;
-    }
+        function startTimer() {
+            // إعادة ضبط العداد إذا كان يعيد التشغيل
+            clearInterval(timerInterval);
+            timeLeft = 30;
+            timerDisplay.textContent = timeLeft;
+            document.title = originalTitle;
+            startBtn.disabled = true;
 
-    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-    const REQUIRED_SECONDS = 30;
-    let checkInterval = null;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
 
-    function startAdProcess() {
-      const startTime = Date.now();
-      
-      if (tg && tg.openLink) {
-        tg.openLink(adUrl);
-      } else {
-        window.open(adUrl, '_blank');
-      }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "تم الانتهاء!";
+                    startBtn.disabled = false;
 
-      const btn = document.getElementById('ad-btn');
-      const timerStatus = document.getElementById('timer-status');
-      
-      btn.disabled = true;
-      timerStatus.classList.remove('hidden');
-      timerStatus.style.color = "#facc15";
-      
-      if (checkInterval) clearInterval(checkInterval);
-      
-      checkInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const remaining = REQUIRED_SECONDS - elapsed;
+                    // 1. تشغيل تنبيه صوتي
+                    playBeepSound();
 
-        if (remaining <= 0) {
-          clearInterval(checkInterval);
-          // تشغيل الصوت عند الانتهاء
-          audioBeep.play().catch(e => console.log("الصوت محجوب من المتصفح"));
-          
-          timerStatus.style.color = "#10b981";
-          timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-          btn.disabled = false;
-          btn.className = "btn btn-claim";
-          btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-          btn.onclick = claimReward;
-        } else {
-          timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... شاهد الإعلان وعُد هنا!`;
+                    // 2. إهتزاز الهاتف (إن كان الجهاز يدعم ذلك)
+                    if (navigator.vibrate) {
+                        navigator.vibrate([200, 100, 200, 100, 400]);
+                    }
+
+                    // 3. تغيير عنوان المتصفح ليلفت انتباهك
+                    document.title = "🔔 اكتمل الوقت!";
+                }
+            }, 1000);
         }
-      }, 1000);
-    }
+    </script>
 
-    function claimReward() {
-      alert("تمت إضافة النقاط بنجاح!"); 
-      if (tg) {
-        tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
-        setTimeout(() => { tg.close(); }, 800);
-      }
-    }
-
-    function openCpxSurveys() {
-      let userId = (tg && tg.initDataUnsafe?.user) ? tg.initDataUnsafe.user.id : '123456';
-      const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
-      tg?.openLink ? tg.openLink(cpxUrl) : window.open(cpxUrl, '_blank');
-    }
-
-    window.onload = initApp;
-  </script>
 </body>
 </html>
