@@ -51,7 +51,6 @@
 
       <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
 
-      <!-- زر الإعلان الأساسي -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
         🎬 مشاهدة إعلان (+10 نقاط)
       </button>
@@ -73,7 +72,19 @@
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
     const REQUIRED_SECONDS = 30;
     
-    // إعدادات التطبيق
+    let timeLeft = REQUIRED_SECONDS;
+    let timerInterval = null;
+    let isAdActive = false;
+
+    async function checkVPN() {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        if (data.proxy || data.hosting) return true;
+      } catch (e) { console.log("تجاوز الفحص"); }
+      return false;
+    }
+
     async function initApp() {
       if (!tg) {
         document.getElementById('browser-view').classList.remove('hidden');
@@ -81,17 +92,47 @@
       }
       tg.ready(); 
       tg.expand();
+      
+      const isVPN = await checkVPN();
+      if (isVPN) {
+        document.getElementById('vpn-view').classList.remove('hidden');
+        return;
+      }
       document.getElementById('telegram-view').classList.remove('hidden');
       
-      // الرابط
       const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
       const linkElement = document.getElementById('offerwall-link');
       if (linkElement && tg.initDataUnsafe?.user) {
         linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
-      }
+      } else if(linkElement) { linkElement.href = offerwallBase; }
+
+      startUsernameInterval();
     }
 
-    // منطق الإعلان البسيط
+    function startUsernameInterval() {
+      let checkCount = 0;
+      const nameInterval = setInterval(() => {
+        checkCount++;
+        const name = getUserName();
+        if (name) {
+          document.getElementById('user-name').innerText = name;
+          clearInterval(nameInterval);
+        } else if (checkCount > 40) {
+          clearInterval(nameInterval);
+          document.getElementById('user-name').innerText = "المستخدم";
+        }
+      }, 100);
+    }
+
+    function getUserName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
+      return null;
+    }
+
+    // --- 🛡️ منطق حماية العداد منعاً للغش ---
     function startAdProcess() {
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
@@ -103,32 +144,57 @@
         window.open(adUrl, '_blank');
       }
 
-      // إخفاء الزر وبدء العد
       btn.disabled = true;
-      btn.innerText = "⏳ يرجى الانتظار...";
       timerStatus.classList.remove('hidden');
       
-      let timeLeft = REQUIRED_SECONDS;
-      timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية...`;
+      timeLeft = REQUIRED_SECONDS;
+      isAdActive = true;
 
-      const countdown = setInterval(() => {
+      runTimer();
+    }
+
+    function runTimer() {
+      const timerStatus = document.getElementById('timer-status');
+      
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        // حماية: إذا خرج المستخدم من التطبيق، قم بإيقاف العداد موقتاً
+        if (document.hidden) {
+          timerStatus.style.color = "#ef4444"; // أحمر
+          timerStatus.innerText = `⚠️ توقف العداد! يجب عليك البقاء داخل صفحة الإعلان.`;
+          return; 
+        }
+
         timeLeft--;
-        if (timeLeft > 0) {
-          timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية...`;
-        } else {
-          clearInterval(countdown);
-          // هنا يتحول الزر مباشرة للمطالبة
-          timerStatus.innerText = "✅ انتهى الوقت!";
+        timerStatus.style.color = "#facc15"; // أصفر
+        timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية... قم بمشاهدة الإعلان`;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          isAdActive = false;
+          
+          const btn = document.getElementById('ad-btn');
+          timerStatus.style.color = "#10b981";
+          timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
           btn.disabled = false;
-          btn.innerText = "🎁 استلام المكافأة (+10 نقاط)";
           btn.className = "btn btn-claim";
+          btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
           btn.onclick = claimReward;
         }
       }, 1000);
     }
 
+    // كشف خروج ودخول المستخدم للتطبيق
+    document.addEventListener("visibilitychange", function() {
+      if (isAdActive && !document.hidden && timeLeft > 0) {
+        // عند عودته للتطبيق يتم استئناف العداد
+        runTimer();
+      }
+    });
+
     function claimReward() {
-      alert("تمت إضافة النقاط!"); 
+      alert("تمت إضافة النقاط بنجاح!"); 
       if (tg) {
         tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
         setTimeout(() => { tg.close(); }, 800);
