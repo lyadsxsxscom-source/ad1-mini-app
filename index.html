@@ -35,19 +35,16 @@
     
     .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
     
-    /* تصميم تنبيه الـ VPN */
     .vpn-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <!-- تنبيه الـ VPN -->
     <div id="vpn-view" class="hidden">
       <div class="vpn-alert">⚠️ تم اكتشاف VPN! يرجى إيقاف الـ VPN للمتابعة.</div>
     </div>
 
-    <!-- قسم العرض المخصص للتليجرام -->
     <div id="telegram-view" class="hidden">
       <div class="welcome-box">
         مرحباً بك، <span id="user-name">المستخدم</span> 👋
@@ -65,7 +62,6 @@
       </button>
     </div>
 
-    <!-- قسم المتصفح -->
     <div id="browser-view" class="hidden">
       <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
     </div>
@@ -74,7 +70,10 @@
   <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-    // --- 1. فحص الـ VPN ---
+    // --- 🔊 كود الصوت المدمج ---
+    // هذا صوت تنبيه قصير (Base64) يعمل بدون إنترنت وبسرعة
+    const audioBeep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+
     async function checkVPN() {
       try {
         const res = await fetch('https://ipapi.co/json/');
@@ -84,24 +83,18 @@
       return false;
     }
 
-    // --- 2. تهيئة التطبيق الأساسية ---
     async function initApp() {
       if (!tg) {
         document.getElementById('browser-view').classList.remove('hidden');
         return;
       }
-
       tg.ready(); 
       tg.expand();
-
-      // التحقق من الـ VPN أولاً
       const isVPN = await checkVPN();
       if (isVPN) {
         document.getElementById('vpn-view').classList.remove('hidden');
         return;
       }
-
-      // إذا كان كل شيء سليم، أظهر الواجهة
       document.getElementById('telegram-view').classList.remove('hidden');
       
       const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
@@ -110,41 +103,32 @@
         linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
       } else if(linkElement) { linkElement.href = offerwallBase; }
 
-      // بدء البحث عن اسم المستخدم
       startUsernameInterval();
     }
 
-    // --- 3. منطق اسم المستخدم الأصلي ---
-    function getUserName() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
-        return tg.initDataUnsafe.user.first_name;
-      }
-      return null;
-    }
-
     function startUsernameInterval() {
-      let nameFound = false;
       let checkCount = 0;
       const nameInterval = setInterval(() => {
         checkCount++;
         const name = getUserName();
         if (name) {
-          const userNameElem = document.getElementById('user-name');
-          if (userNameElem) userNameElem.innerText = name;
-          nameFound = true;
+          document.getElementById('user-name').innerText = name;
           clearInterval(nameInterval);
         } else if (checkCount > 40) {
           clearInterval(nameInterval);
-          const userNameElem = document.getElementById('user-name');
-          if (!nameFound && userNameElem) userNameElem.innerText = "المستخدم";
+          document.getElementById('user-name').innerText = "المستخدم";
         }
       }, 100);
     }
 
-    // --- 4. نظام الإعلانات المتوافق 100% مع بيئة تليجرام ---
+    function getUserName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
+      return null;
+    }
+
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
     const REQUIRED_SECONDS = 30;
     let checkInterval = null;
@@ -152,7 +136,6 @@
     function startAdProcess() {
       const startTime = Date.now();
       
-      // فتح الإعلان باستخدام دالة تليجرام المعتمدة للروابط الخارجية
       if (tg && tg.openLink) {
         tg.openLink(adUrl);
       } else {
@@ -174,6 +157,9 @@
 
         if (remaining <= 0) {
           clearInterval(checkInterval);
+          // تشغيل الصوت عند الانتهاء
+          audioBeep.play().catch(e => console.log("الصوت محجوب من المتصفح"));
+          
           timerStatus.style.color = "#10b981";
           timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
           btn.disabled = false;
@@ -187,6 +173,7 @@
     }
 
     function claimReward() {
+      alert("تمت إضافة النقاط بنجاح!"); 
       if (tg) {
         tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
         setTimeout(() => { tg.close(); }, 800);
