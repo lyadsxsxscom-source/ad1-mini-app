@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mall Games App</title>
   
+  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <style>
@@ -40,15 +41,18 @@
 <body>
 
   <div class="container">
+    <!-- شاشة تنبيه VPN -->
     <div id="vpn-view" class="hidden">
       <div class="vpn-alert">⚠️ تم اكتشاف VPN! يرجى إيقاف الـ VPN للمتابعة.</div>
     </div>
 
+    <!-- الواجهة الرئيسية عند الفتح في التليجرام -->
     <div id="telegram-view" class="hidden">
       <div class="welcome-box">
         مرحباً بك، <span id="user-name">المستخدم</span> 👋
       </div>
 
+      <!-- زر جدار العروض FastSvr -->
       <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
 
       <!-- زر مشاهدة الإعلان -->
@@ -58,11 +62,13 @@
 
       <div id="timer-status" class="timer-status hidden"></div>
 
+      <!-- زر استبيانات CPX Research -->
       <button onclick="openCpxSurveys()" class="btn btn-cpx">
         📋 استبيانات CPX Research
       </button>
     </div>
 
+    <!-- شاشة تنبيه الفتح من متصفح خارجي -->
     <div id="browser-view" class="hidden">
       <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
     </div>
@@ -77,15 +83,35 @@
     let leftTime = null;         // توقيت لحظة الخروج
     let isAdActive = false;
 
+    // 🆔 استخراج ID المستخدم بطريقة مضمونة لربط الحساب بالشبكات الإعلانية
+    function getUserId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const idFromUrl = urlParams.get('user_id') || urlParams.get('id');
+      if (idFromUrl) return idFromUrl;
+      if (tg?.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user.id;
+      return "guest_user";
+    }
+
+    // 👤 استخراج اسم المستخدم
+    function getUserName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
+      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
+      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
+      return "المستخدم";
+    }
+
+    // 🛡️ فحص الـ VPN
     async function checkVPN() {
       try {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         if (data.proxy || data.hosting) return true;
-      } catch (e) { console.log("تجاوز الفحص"); }
+      } catch (e) { console.log("تجاوز فحص الـ VPN"); }
       return false;
     }
 
+    // 🚀 تهيئة التطبيق عند الفتح
     async function initApp() {
       if (!tg) {
         document.getElementById('browser-view').classList.remove('hidden');
@@ -101,47 +127,26 @@
       }
       document.getElementById('telegram-view').classList.remove('hidden');
       
+      // 🎯 ربط حساب المستخدم المباشر بـ FastSvr لمنع تكرار الحسابات
+      const userId = getUserId();
       const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
       const linkElement = document.getElementById('offerwall-link');
-      if (linkElement && tg.initDataUnsafe?.user) {
-        linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
-      } else if(linkElement) { linkElement.href = offerwallBase; }
+      if (linkElement) {
+        linkElement.href = `${offerwallBase}?subid=${userId}`; 
+      }
 
-      startUsernameInterval();
+      // عرض اسم المستخدم
+      document.getElementById('user-name').innerText = getUserName();
     }
 
-    function startUsernameInterval() {
-      let checkCount = 0;
-      const nameInterval = setInterval(() => {
-        checkCount++;
-        const name = getUserName();
-        if (name) {
-          document.getElementById('user-name').innerText = name;
-          clearInterval(nameInterval);
-        } else if (checkCount > 40) {
-          clearInterval(nameInterval);
-          document.getElementById('user-name').innerText = "المستخدم";
-        }
-      }, 100);
-    }
-
-    function getUserName() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
-      return null;
-    }
-
-    // --- 🛡️ منطق الحماية ضد الغش ---
+    // --- 🛡️ منطق الحماية ومراقبة الوقت للإعلانات ---
     function startAdProcess() {
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
       
       isAdActive = true;
-      leftTime = Date.now(); // تسجيل وقت المغادرة فوراً
+      leftTime = Date.now();
 
-      // فتح رابط الإعلان
       if (tg && tg.openLink) {
         tg.openLink(adUrl);
       } else {
@@ -154,7 +159,6 @@
       timerStatus.innerText = "⏳ يرجى البقاء داخل الإعلان لمدة 30 ثانية...";
     }
 
-    // حاسبة الوقت عند العودة للتطبيق
     function handleReturn() {
       if (!isAdActive || !leftTime) return;
 
@@ -175,7 +179,6 @@
       const remaining = REQUIRED_SECONDS - accumulatedAwayTime;
 
       if (remaining <= 0) {
-        // تم إكمال الـ 30 ثانية بالكامل خارج التطبيق
         isAdActive = false;
         timerStatus.style.color = "#10b981";
         timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية داخل الإعلان. اضغط للتحصيل 👇";
@@ -185,7 +188,6 @@
         btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
         btn.onclick = claimReward;
       } else {
-        // لم يكمل الـ 30 ثانية
         timerStatus.style.color = "#facc15";
         timerStatus.innerText = `⏳ بقيت ${accumulatedAwayTime} ثانية في الإعلان. متبقي ${remaining} ثانية!`;
         
@@ -196,7 +198,6 @@
       }
     }
 
-    // كشف لحظة عودة المستخدم للتطبيق
     document.addEventListener("visibilitychange", function() {
       if (!document.hidden) {
         handleReturn();
@@ -217,8 +218,9 @@
       }
     }
 
+    // 📋 فتح استبيانات CPX المربوطة برقم ID المستخدم دائماً
     function openCpxSurveys() {
-      let userId = (tg && tg.initDataUnsafe?.user) ? tg.initDataUnsafe.user.id : '123456';
+      const userId = getUserId();
       const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
       tg?.openLink ? tg.openLink(cpxUrl) : window.open(cpxUrl, '_blank');
     }
