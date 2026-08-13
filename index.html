@@ -34,7 +34,6 @@
     .btn-claim { background-color: #ec4899; }
     
     .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
-    
     .vpn-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
@@ -52,9 +51,11 @@
 
       <a id="offerwall-link" href="#" target="_blank" class="btn btn-offerwall">🔥 تنفيذ العروض (FastSvr)</a>
 
+      <!-- زر الإعلان الأساسي -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
         🎬 مشاهدة إعلان (+10 نقاط)
       </button>
+      
       <div id="timer-status" class="timer-status hidden"></div>
 
       <button onclick="openCpxSurveys()" class="btn btn-cpx">
@@ -69,20 +70,10 @@
 
   <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-    // --- 🔊 كود الصوت المدمج ---
-    // هذا صوت تنبيه قصير (Base64) يعمل بدون إنترنت وبسرعة
-    const audioBeep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-
-    async function checkVPN() {
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        if (data.proxy || data.hosting) return true;
-      } catch (e) { console.log("تجاوز الفحص"); }
-      return false;
-    }
-
+    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
+    const REQUIRED_SECONDS = 30;
+    
+    // إعدادات التطبيق
     async function initApp() {
       if (!tg) {
         document.getElementById('browser-view').classList.remove('hidden');
@@ -90,93 +81,54 @@
       }
       tg.ready(); 
       tg.expand();
-      const isVPN = await checkVPN();
-      if (isVPN) {
-        document.getElementById('vpn-view').classList.remove('hidden');
-        return;
-      }
       document.getElementById('telegram-view').classList.remove('hidden');
       
+      // الرابط
       const offerwallBase = "https://www.fastsvr.com/wall/UG2x1";
       const linkElement = document.getElementById('offerwall-link');
       if (linkElement && tg.initDataUnsafe?.user) {
         linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
-      } else if(linkElement) { linkElement.href = offerwallBase; }
-
-      startUsernameInterval();
+      }
     }
 
-    function startUsernameInterval() {
-      let checkCount = 0;
-      const nameInterval = setInterval(() => {
-        checkCount++;
-        const name = getUserName();
-        if (name) {
-          document.getElementById('user-name').innerText = name;
-          clearInterval(nameInterval);
-        } else if (checkCount > 40) {
-          clearInterval(nameInterval);
-          document.getElementById('user-name').innerText = "المستخدم";
-        }
-      }, 1000);
-    }
-
-    function getUserName() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
-      if (nameFromUrl) return decodeURIComponent(nameFromUrl);
-      if (tg?.initDataUnsafe?.user?.first_name) return tg.initDataUnsafe.user.first_name;
-      return null;
-    }
-
-    const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
-    const REQUIRED_SECONDS = 30;
-    let checkInterval = null;
-
+    // منطق الإعلان البسيط
     function startAdProcess() {
-      const startTime = Date.now();
+      const btn = document.getElementById('ad-btn');
+      const timerStatus = document.getElementById('timer-status');
       
+      // فتح الإعلان
       if (tg && tg.openLink) {
         tg.openLink(adUrl);
       } else {
         window.open(adUrl, '_blank');
       }
 
-      const btn = document.getElementById('ad-btn');
-      const timerStatus = document.getElementById('timer-status');
-      
+      // إخفاء الزر وبدء العد
       btn.disabled = true;
+      btn.innerText = "⏳ يرجى الانتظار...";
       timerStatus.classList.remove('hidden');
-      timerStatus.style.color = "#facc15";
       
-      if (checkInterval) clearInterval(checkInterval);
-      
-      checkInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const remaining = REQUIRED_SECONDS - elapsed;
+      let timeLeft = REQUIRED_SECONDS;
+      timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية...`;
 
-        if (remaining <= 0) {
-          clearInterval(checkInterval);
-          // تشغيل الصوت عند الانتهاء
-          audioBeep.play().catch(e => console.log("الصوت محجوب من المتصفح"));
-          
-          // تغيير عنوان المتصفح ليلفت انتباهك
-          document.title = "🔔 اكتمل الوقت!";
-          
-          timerStatus.style.color = "#10b981";
-          timerStatus.innerText = "🎉 انتهى الوقت! اضغط للتحصيل 👇";
-          btn.disabled = false;
-          btn.className = "btn btn-claim";
-          btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
-          btn.onclick = claimReward;
+      const countdown = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+          timerStatus.innerText = `⏳ متبقي ${timeLeft} ثانية...`;
         } else {
-          timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... شاهد الإعلان وعُد هنا!`;
+          clearInterval(countdown);
+          // هنا يتحول الزر مباشرة للمطالبة
+          timerStatus.innerText = "✅ انتهى الوقت!";
+          btn.disabled = false;
+          btn.innerText = "🎁 استلام المكافأة (+10 نقاط)";
+          btn.className = "btn btn-claim";
+          btn.onclick = claimReward;
         }
       }, 1000);
     }
 
     function claimReward() {
-      alert("تمت إضافة النقاط بنجاح!"); 
+      alert("تمت إضافة النقاط!"); 
       if (tg) {
         tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
         setTimeout(() => { tg.close(); }, 800);
