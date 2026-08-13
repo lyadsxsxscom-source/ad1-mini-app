@@ -110,11 +110,11 @@
         linkElement.href = offerwallBase + "?subid=" + tg.initDataUnsafe.user.id; 
       } else if(linkElement) { linkElement.href = offerwallBase; }
 
-      // بدء البحث عن اسم المستخدم (باستخدام المنطق الأصلي الذي تفضله)
+      // بدء البحث عن اسم المستخدم
       startUsernameInterval();
     }
 
-    // --- 3. منطق اسم المستخدم (الأصلي) ---
+    // --- 3. منطق اسم المستخدم الأصلي ---
     function getUserName() {
       const urlParams = new URLSearchParams(window.location.search);
       const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
@@ -144,22 +144,27 @@
       }, 100);
     }
 
-    // --- 4. منطق الإعلانات المحدث (قوي وبدون أخطاء) ---
+    // --- 4. نظام الإعلانات المتوافق 100% مع بيئة تليجرام ---
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
     const REQUIRED_SECONDS = 30;
     let checkInterval = null;
-    let adWindow = null;
 
     function startAdProcess() {
-      let startTime = Date.now();
-      adWindow = window.open(adUrl, '_blank');
+      const startTime = Date.now();
+      
+      // فتح الإعلان باستخدام دالة تليجرام المعتمدة للروابط الخارجية
+      if (tg && tg.openLink) {
+        tg.openLink(adUrl);
+      } else {
+        window.open(adUrl, '_blank');
+      }
+
       const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
       
       btn.disabled = true;
       timerStatus.classList.remove('hidden');
       timerStatus.style.color = "#facc15";
-      timerStatus.innerText = `⏳ يرجى مشاهدة الإعلان لمدة 30 ثانية...`;
       
       if (checkInterval) clearInterval(checkInterval);
       
@@ -167,7 +172,6 @@
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const remaining = REQUIRED_SECONDS - elapsed;
 
-        // حالة النجاح
         if (remaining <= 0) {
           clearInterval(checkInterval);
           timerStatus.style.color = "#10b981";
@@ -176,27 +180,13 @@
           btn.className = "btn btn-claim";
           btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
           btn.onclick = claimReward;
-          return;
+        } else {
+          timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... شاهد الإعلان وعُد هنا!`;
         }
-
-        // حالة الخروج (مع فترة سماح 5 ثوانٍ لمنع الخطأ أثناء التحميل)
-        if (elapsed > 5 && adWindow && adWindow.closed) {
-          clearInterval(checkInterval);
-          timerStatus.style.color = "#ef4444";
-          timerStatus.innerText = "❌ غادرت قبل الوقت! حاول مجدداً";
-          btn.disabled = false;
-          btn.className = "btn btn-ad";
-          btn.innerText = "🎬 مشاهدة إعلان (+10 نقاط)";
-          btn.onclick = startAdProcess;
-          return;
-        }
-
-        timerStatus.innerText = `⏳ متبقي ${remaining} ثانية... لا تغلق الصفحة!`;
       }, 1000);
     }
 
     function claimReward() {
-      if (adWindow && !adWindow.closed) try { adWindow.close(); } catch(e) {}
       if (tg) {
         tg.sendData(JSON.stringify({ action: "add_points", amount: 0.0010 }));
         setTimeout(() => { tg.close(); }, 800);
@@ -209,7 +199,6 @@
       tg?.openLink ? tg.openLink(cpxUrl) : window.open(cpxUrl, '_blank');
     }
 
-    // تشغيل التهيئة
     window.onload = initApp;
   </script>
 </body>
