@@ -54,19 +54,19 @@
 
       <!-- زر جدار العروض FastSvr المحدث لفتح العروض خارجيين وتفادي الشاشة البيضاء -->
       <button onclick="openOfferwall()" class="btn btn-offerwall">
-        🔥 تنفيذ العروض (FastSvr)
+        🔥 جدار المهام
       </button>
 
       <!-- زر مشاهدة الإعلان -->
       <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
-        🎬 مشاهدة إعلان (+10 نقاط)
+        🎬 مشاهدة إعلان (+5 نقاط)
       </button>
 
       <div id="timer-status" class="timer-status hidden"></div>
 
       <!-- زر استبيانات CPX Research -->
       <button onclick="openCpxSurveys()" class="btn btn-cpx">
-        📋 استبيانات CPX Research
+        📋 استبيانات & استطلاع رأي
       </button>
     </div>
 
@@ -191,7 +191,7 @@
         
         btn.disabled = false;
         btn.className = "btn btn-claim";
-        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+10 نقاط)";
+        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+5 نقاط)";
         btn.onclick = claimReward;
       } else {
         timerStatus.style.color = "#facc15";
