@@ -9,33 +9,146 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-sky: #0284c7;
+      --accent-purple: #8b5cf6;
+    }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #151e27;
-      color: #ffffff;
-      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 16px;
       margin: 0;
-      text-align: center;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
-    .container { max-width: 400px; margin: 0 auto; }
+
+    .container { max-width: 420px; margin: 0 auto; }
     .hidden { display: none !important; }
     
-    .welcome-box { font-size: 18px; margin-bottom: 20px; font-weight: bold; color: #38bdf8; }
-    
-    .btn {
-      display: block; width: 100%; padding: 14px; margin: 12px 0; border: none; border-radius: 10px;
-      font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none;
-      box-sizing: border-box; color: #ffffff; transition: opacity 0.2s ease;
+    /* بطاقة المستخدم */
+    .user-header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
-    .btn:active { opacity: 0.8; }
-    
-    .btn-offerwall { background-color: #f59e0b; }
-    .btn-ad { background-color: #10b981; }
-    .btn-cpx { background-color: #0088cc; }
-    .btn-claim { background-color: #ec4899; }
-    
-    .timer-status { margin-top: -6px; margin-bottom: 10px; font-size: 14px; color: #facc15; }
-    .vpn-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 10px; margin-top: 20px; }
+
+    .user-avatar {
+      width: 45px;
+      height: 45px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .user-info { text-align: right; }
+    .user-info .welcome { font-size: 12px; color: var(--text-muted); }
+    .user-info .username { font-size: 16px; font-weight: 700; color: var(--text-main); }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: right;
+      margin: 0 4px 12px 0;
+    }
+
+    /* بطاقات المهام التفاعلية */
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .task-card:active {
+      transform: scale(0.98);
+      background: rgba(51, 65, 85, 0.8);
+    }
+
+    .task-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .task-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .task-details { text-align: right; }
+    .task-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+    .task-sub { font-size: 12px; color: var(--text-muted); }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* ألوان الأيقونات والشارات */
+    .bg-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .badge-amber { background: #f59e0b; color: #000; }
+
+    .bg-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .badge-emerald { background: #10b981; color: #fff; }
+
+    .bg-sky { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }
+    .badge-sky { background: #0284c7; color: #fff; }
+
+    /* تنبيهات ودقائق */
+    .timer-status {
+      margin: 8px 0 16px 0;
+      font-size: 13px;
+      color: #facc15;
+      background: rgba(250, 204, 21, 0.1);
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(250, 204, 21, 0.3);
+      text-align: center;
+    }
+
+    .vpn-alert {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -43,36 +156,70 @@
   <div class="container">
     <!-- شاشة تنبيه VPN -->
     <div id="vpn-view" class="hidden">
-      <div class="vpn-alert">⚠️ تم اكتشاف VPN! يرجى إيقاف الـ VPN للمتابعة.</div>
+      <div class="vpn-alert">
+        🚨 <b>تم اكتشاف VPN!</b><br>
+        يرجى إيقاف الـ VPN ومكافح الإعلانات للمتابعة وكسب النقاط.
+      </div>
     </div>
 
-    <!-- الواجهة الرئيسية عند الفتح في التليجرام -->
+    <!-- الواجهة الرئيسية -->
     <div id="telegram-view" class="hidden">
-      <div class="welcome-box">
-        مرحباً بك، <span id="user-name">المستخدم</span> 👋
+      
+      <!-- كارت المستخدم العلوي -->
+      <div class="user-header">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <div class="welcome">مرحباً بك مجدداً</div>
+          <div class="username" id="user-name">المستخدم</div>
+        </div>
       </div>
 
-      <!-- زر جدار العروض FastSvr المحدث لفتح العروض خارجيين وتفادي الشاشة البيضاء -->
-      <button onclick="openOfferwall()" class="btn btn-offerwall">
-        🔥 جدار المهام
-      </button>
+      <div class="section-title">مركز المهام والأرباح</div>
 
-      <!-- زر مشاهدة الإعلان -->
-      <button id="ad-btn" onclick="startAdProcess()" class="btn btn-ad">
-        🎬 مشاهدة إعلان (+5 نقاط)
-      </button>
+      <!-- جدار العروض -->
+      <div onclick="openOfferwall()" class="task-card">
+        <div class="task-left">
+          <div class="task-icon bg-amber">🔥</div>
+          <div class="task-details">
+            <div class="task-title">جدار المهام والألعاب</div>
+            <div class="task-sub">حمل التطبيقات والألعاب واكسب</div>
+          </div>
+        </div>
+        <div class="badge badge-amber">عالي الأرباح</div>
+      </div>
 
+      <!-- مشاهدة الإعلان -->
+      <div id="ad-card" onclick="startAdProcess()" class="task-card">
+        <div class="task-left">
+          <div class="task-icon bg-emerald">🎬</div>
+          <div class="task-details">
+            <div class="task-title" id="ad-title">مشاهدة إعلان سريع</div>
+            <div class="task-sub" id="ad-sub">ابقَ لمدة 30 ثانية داخل الإعلان</div>
+          </div>
+        </div>
+        <div id="ad-badge" class="badge badge-emerald">+5 نقاط</div>
+      </div>
+
+      <!-- حالة العداد -->
       <div id="timer-status" class="timer-status hidden"></div>
 
-      <!-- زر استبيانات CPX Research -->
-      <button onclick="openCpxSurveys()" class="btn btn-cpx">
-        📋 استبيانات & استطلاع رأي
-      </button>
+      <!-- استبيانات CPX -->
+      <div onclick="openCpxSurveys()" class="task-card">
+        <div class="task-left">
+          <div class="task-icon bg-sky">📋</div>
+          <div class="task-details">
+            <div class="task-title">استبيانات واستطلاع رأي</div>
+            <div class="task-sub">أجب على الأسئلة البسيطة</div>
+          </div>
+        </div>
+        <div class="badge badge-sky">نقاط سريعة</div>
+      </div>
+
     </div>
 
-    <!-- شاشة تنبيه الفتح من متصفح خارجي -->
-    <div id="browser-view" class="hidden">
-      <p>يرجى فتح البوت عبر التليجرام للوصول للميزات.</p>
+    <!-- شاشة المتصفح الخارجي -->
+    <div id="browser-view" class="hidden" style="text-align: center; padding-top: 50px;">
+      <p>⚠️ يرجى فتح البوت مباشرة عبر تطبيق التليجرام.</p>
     </div>
   </div>
 
@@ -81,11 +228,10 @@
     const adUrl = "https://www.effectivecpmnetwork.com/g6tesg3dw?key=504cabf2ea751d490e611ef136c7f49b";
     const REQUIRED_SECONDS = 30;
     
-    let accumulatedAwayTime = 0; // مجموع الثواني التي قضاها خارج التليجرام
-    let leftTime = null;         // توقيت لحظة الخروج
+    let accumulatedAwayTime = 0;
+    let leftTime = null;
     let isAdActive = false;
 
-    // 🆔 استخراج ID المستخدم بطريقة مضمونة لربط الحساب بالشبكات الإعلانية
     function getUserId() {
       const urlParams = new URLSearchParams(window.location.search);
       const idFromUrl = urlParams.get('user_id') || urlParams.get('id');
@@ -94,7 +240,6 @@
       return "guest_user";
     }
 
-    // 👤 استخراج اسم المستخدم
     function getUserName() {
       const urlParams = new URLSearchParams(window.location.search);
       const nameFromUrl = urlParams.get('name') || urlParams.get('first_name');
@@ -103,7 +248,6 @@
       return "المستخدم";
     }
 
-    // 🛡️ فحص الـ VPN
     async function checkVPN() {
       try {
         const res = await fetch('https://ipapi.co/json/');
@@ -113,7 +257,6 @@
       return false;
     }
 
-    // 🚀 تهيئة التطبيق عند الفتح
     async function initApp() {
       if (!tg) {
         document.getElementById('browser-view').classList.remove('hidden');
@@ -128,16 +271,12 @@
         return;
       }
       document.getElementById('telegram-view').classList.remove('hidden');
-
-      // عرض اسم المستخدم
       document.getElementById('user-name').innerText = getUserName();
     }
 
-    // 🚀 فتح جدار العروض في متصفح خارجي لحل مشكلة الشاشة البيضاء والتوجيه للمتجر
     function openOfferwall() {
       const userId = getUserId();
       const offerUrl = `https://www.cdnflair.com/wall/UG2x1?subid=${userId}`;
-      
       if (tg && tg.openLink) {
         tg.openLink(offerUrl, { try_instant_view: false });
       } else {
@@ -145,9 +284,7 @@
       }
     }
 
-    // --- 🛡️ منطق الحماية ومراقبة الوقت للإعلانات ---
     function startAdProcess() {
-      const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
       
       isAdActive = true;
@@ -159,9 +296,7 @@
         window.open(adUrl, '_blank');
       }
 
-      btn.disabled = true;
       timerStatus.classList.remove('hidden');
-      timerStatus.style.color = "#facc15";
       timerStatus.innerText = "⏳ يرجى البقاء داخل الإعلان لمدة 30 ثانية...";
     }
 
@@ -180,27 +315,29 @@
     }
 
     function updateUI() {
-      const btn = document.getElementById('ad-btn');
       const timerStatus = document.getElementById('timer-status');
+      const adCard = document.getElementById('ad-card');
+      const adTitle = document.getElementById('ad-title');
+      const adSub = document.getElementById('ad-sub');
+      const adBadge = document.getElementById('ad-badge');
+
       const remaining = REQUIRED_SECONDS - accumulatedAwayTime;
 
       if (remaining <= 0) {
         isAdActive = false;
         timerStatus.style.color = "#10b981";
-        timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية داخل الإعلان. اضغط للتحصيل 👇";
+        timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية. اضغط على البطاقة لاستلام المكافأة!";
         
-        btn.disabled = false;
-        btn.className = "btn btn-claim";
-        btn.innerText = "🎁 اضغط هنا لاستلام المكافأة (+5 نقاط)";
-        btn.onclick = claimReward;
+        adTitle.innerText = "🎁 استلام المكافأة الآن";
+        adSub.innerText = "اضغط للحصول على (+5 نقاط)";
+        adBadge.className = "badge badge-amber";
+        adBadge.innerText = "جاهز للتحصيل";
+        adCard.onclick = claimReward;
       } else {
-        timerStatus.style.color = "#facc15";
         timerStatus.innerText = `⏳ بقيت ${accumulatedAwayTime} ثانية في الإعلان. متبقي ${remaining} ثانية!`;
-        
-        btn.disabled = false;
-        btn.className = "btn btn-ad";
-        btn.innerText = `🎬 إكمال مشاهدة الإعلان (متبقي ${remaining} ثانية)`;
-        btn.onclick = startAdProcess;
+        adTitle.innerText = `🎬 إكمال مشاهدة الإعلان`;
+        adSub.innerText = `متبقي ${remaining} ثانية في الإعلان`;
+        adCard.onclick = startAdProcess;
       }
     }
 
@@ -224,7 +361,6 @@
       }
     }
 
-    // 📋 فتح استبيانات CPX المربوطة برقم ID المستخدم دائماً
     function openCpxSurveys() {
       const userId = getUserId();
       const cpxUrl = `https://offers.cpx-research.com/index.php?app_id=35328&ext_user_id=${userId}`;
