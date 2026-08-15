@@ -43,7 +43,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
 
@@ -63,36 +63,6 @@
     .user-info .welcome { font-size: 12px; color: var(--text-muted); }
     .user-info .username { font-size: 16px; font-weight: 700; color: var(--text-main); }
 
-    /* بطاقة الشرح والتوجيهات */
-    .guide-card {
-      background: rgba(2, 132, 199, 0.1);
-      border: 1px solid rgba(2, 132, 199, 0.3);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-    }
-
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .guide-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #38bdf8;
-    }
-
-    .guide-list {
-      font-size: 11px;
-      color: #94a3b8;
-      line-height: 1.6;
-      padding-right: 18px;
-      margin: 0;
-    }
-
     .section-title {
       font-size: 14px;
       font-weight: 600;
@@ -101,7 +71,7 @@
       margin: 0 4px 12px 0;
     }
 
-    /* بطاقات المهام */
+    /* بطاقات المهام التفاعلية */
     .task-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -149,7 +119,7 @@
       white-space: nowrap;
     }
 
-    /* الألوان */
+    /* ألوان الأيقونات والشارات */
     .bg-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
     .badge-amber { background: #f59e0b; color: #000; }
 
@@ -159,6 +129,7 @@
     .bg-sky { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }
     .badge-sky { background: #0284c7; color: #fff; }
 
+    /* تنبيهات ودقائق */
     .timer-status {
       margin: 8px 0 16px 0;
       font-size: 13px;
@@ -183,7 +154,7 @@
 <body>
 
   <div class="container">
-    <!-- تنبيه VPN -->
+    <!-- شاشة تنبيه VPN -->
     <div id="vpn-view" class="hidden">
       <div class="vpn-alert">
         🚨 <b>تم اكتشاف VPN!</b><br>
@@ -194,7 +165,7 @@
     <!-- الواجهة الرئيسية -->
     <div id="telegram-view" class="hidden">
       
-      <!-- كارت المستخدم -->
+      <!-- كارت المستخدم العلوي -->
       <div class="user-header">
         <div class="user-avatar">👤</div>
         <div class="user-info">
@@ -203,22 +174,9 @@
         </div>
       </div>
 
-      <!-- بطاقة التعليمات للشرح -->
-      <div class="guide-card">
-        <div class="guide-header">
-          <span style="font-size: 18px;">💡</span>
-          <div class="guide-title">دليل كسب النقاط والقوانين</div>
-        </div>
-        <ul class="guide-list">
-          <li><b>جدار المهام:</b> اكسب عبر تحميل الألعاب وتنفيذ العروض المتاحة.</li>
-          <li><b>مشاهدة الإعلانات:</b> اضغط على الإعلان وعد فوراً للتطبيق، سيبدأ العداد التنازلي باحتساب الثواني طالما أن الشاشة مفتوحة.</li>
-          <li><b>⚠️ تنبيه هام:</b> يُمنع تشغيل VPN أو برامج حظر الإعلانات لتجنب حظر حسابك.</li>
-        </ul>
-      </div>
-
       <div class="section-title">مركز المهام والأرباح</div>
 
-      <!-- جدار العروض CPALead -->
+      <!-- جدار العروض -->
       <div onclick="openOfferwall()" class="task-card">
         <div class="task-left">
           <div class="task-icon bg-amber">🔥</div>
@@ -230,13 +188,13 @@
         <div class="badge badge-amber">عالي الأرباح</div>
       </div>
 
-      <!-- مشاهدة الإعلان Adsterra -->
+      <!-- مشاهدة الإعلان -->
       <div id="ad-card" onclick="startAdProcess()" class="task-card">
         <div class="task-left">
           <div class="task-icon bg-emerald">🎬</div>
           <div class="task-details">
             <div class="task-title" id="ad-title">مشاهدة إعلان سريع</div>
-            <div class="task-sub" id="ad-sub">ابقَ لمدة 30 ثانية داخل التطبيق بعد فتح الإعلان</div>
+            <div class="task-sub" id="ad-sub">ابقَ لمدة 30 ثانية داخل الإعلان</div>
           </div>
         </div>
         <div id="ad-badge" class="badge badge-emerald">+5 نقاط</div>
@@ -270,9 +228,9 @@
     const adUrl = "https://bony-teaching.com/0Ii9l6";
     const REQUIRED_SECONDS = 30;
     
-    let secondsSpent = 0;
+    let accumulatedAwayTime = 0;
+    let leftTime = null;
     let isAdActive = false;
-    let timerInterval = null;
 
     function getUserId() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -326,36 +284,34 @@
       }
     }
 
-    /* بدء عملية ومشاهدة الإعلان والعد التنازلي الذكي */
     function startAdProcess() {
-      if (isAdActive) return;
-
-      isAdActive = true;
+      const timerStatus = document.getElementById('timer-status');
       
-      // فتح رابط الإعلان المباشر
+      isAdActive = true;
+      leftTime = Date.now();
+
       if (tg && tg.openLink) {
         tg.openLink(adUrl);
       } else {
         window.open(adUrl, '_blank');
       }
 
-      const timerStatus = document.getElementById('timer-status');
       timerStatus.classList.remove('hidden');
-      
-      // بدء العداد التنازلي الداخلي
-      startTimer();
+      timerStatus.innerText = "⏳ يرجى البقاء داخل الإعلان لمدة 30 ثانية...";
     }
 
-    function startTimer() {
-      if (timerInterval) clearInterval(timerInterval);
+    function handleReturn() {
+      if (!isAdActive || !leftTime) return;
 
-      timerInterval = setInterval(() => {
-        // العداد يعمل فقط إذا كانت الصفحة ظاهرة والتركيز على التطبيق
-        if (!document.hidden && isAdActive) {
-          secondsSpent++;
-          updateUI();
-        }
-      }, 1000);
+      const now = Date.now();
+      const secondsSpentAway = Math.floor((now - leftTime) / 1000);
+      
+      if (secondsSpentAway > 0) {
+        accumulatedAwayTime += secondsSpentAway;
+      }
+      leftTime = null;
+
+      updateUI();
     }
 
     function updateUI() {
@@ -365,14 +321,12 @@
       const adSub = document.getElementById('ad-sub');
       const adBadge = document.getElementById('ad-badge');
 
-      const remaining = REQUIRED_SECONDS - secondsSpent;
+      const remaining = REQUIRED_SECONDS - accumulatedAwayTime;
 
       if (remaining <= 0) {
-        clearInterval(timerInterval);
         isAdActive = false;
-        
         timerStatus.style.color = "#10b981";
-        timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية الفعالية. اضغط لاستلام المكافأة!";
+        timerStatus.innerText = "🎉 ممتاز! أكملت 30 ثانية. اضغط على البطاقة لاستلام المكافأة!";
         
         adTitle.innerText = "🎁 استلام المكافأة الآن";
         adSub.innerText = "اضغط للحصول على (+5 نقاط)";
@@ -380,18 +334,23 @@
         adBadge.innerText = "جاهز للتحصيل";
         adCard.onclick = claimReward;
       } else {
-        timerStatus.innerText = `⏳ جاري احتساب وقت الإعلان... تبقى ${remaining} ثانية!`;
-        adTitle.innerText = `🎬 جاري مشاهدة الإعلان`;
-        adSub.innerText = `يرجى البقاء داخل الصفحة لمدة ${remaining} ثانية أخرى`;
+        timerStatus.innerText = `⏳ بقيت ${accumulatedAwayTime} ثانية في الإعلان. متبقي ${remaining} ثانية!`;
+        adTitle.innerText = `🎬 إكمال مشاهدة الإعلان`;
+        adSub.innerText = `متبقي ${remaining} ثانية في الإعلان`;
+        adCard.onclick = startAdProcess;
       }
     }
 
-    // إيقاف واستئناف العداد تلقائياً حسب نشاط الشاشة
     document.addEventListener("visibilitychange", function() {
-      const timerStatus = document.getElementById('timer-status');
-      if (document.hidden && isAdActive && secondsSpent < REQUIRED_SECONDS) {
-        timerStatus.innerText = "⏸️ تم إيقاف العداد مؤقتاً! ارجع للتطبيق لاستكمال الـ 30 ثانية.";
+      if (!document.hidden) {
+        handleReturn();
+      } else if (isAdActive && !leftTime) {
+        leftTime = Date.now();
       }
+    });
+
+    window.addEventListener("focus", function() {
+      handleReturn();
     });
 
     function claimReward() {
