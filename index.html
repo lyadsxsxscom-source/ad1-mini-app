@@ -74,7 +74,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            transition: transform 0.4s ease-in-out;
+            transition: transform 0.3s ease-in-out;
         }
 
         /* الألوان */
@@ -91,11 +91,11 @@
         .ball.silver-grey { background-image: url('silver-grey.png'); }
 
         .ball.popped {
-            transform: translateY(-50px);
+            transform: translateY(-45px);
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
         }
 
-        /* الكرة الطائرة ببطء وانسيابية عالية */
+        /* الكرة الطائرة بأمان بدون اختفاء */
         .flying-ball {
             position: absolute;
             width: 42px;
@@ -105,7 +105,8 @@
             background-position: center;
             z-index: 100;
             pointer-events: none;
-            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.9));
+            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.9));
+            transition: all 0.5s ease-in-out;
         }
 
         .controls {
@@ -201,7 +202,7 @@
 
         function render() {
             const board = document.getElementById('gameBoard');
-            const flyingElements = board.querySelectorAll('.flying-ball');
+            const flyingElements = Array.from(board.querySelectorAll('.flying-ball'));
             board.innerHTML = '';
             flyingElements.forEach(el => board.appendChild(el));
 
@@ -215,7 +216,6 @@
 
                 tube.forEach((color, ballIdx) => {
                     const ballEl = document.createElement('div');
-                    // عدم إظهار الكرة الأصلية في الأنبوب إن كانت في حالة طيران
                     const isPopped = isSelected && (ballIdx >= tube.length - sameColorCount);
                     ballEl.className = `ball ${color} ${isPopped ? 'popped' : ''}`;
                     tubeEl.appendChild(ballEl);
@@ -265,17 +265,14 @@
                         
                         isAnimating = true;
 
-                        // سحب الكرات المحددة من المصدر وإبقاء مؤشر الاختيار فارغاً
                         for (let i = 0; i < actualMove; i++) {
-                            source.pop();
-                        }
-                        selectedTubeIndex = null;
-                        render();
+                            const colorToMove = source.pop();
+                            selectedTubeIndex = null;
+                            render();
 
-                        // تنفيذ أنيميشن بطيء ومرحلي لكل كرة متتالية
-                        for (let i = 0; i < actualMove; i++) {
-                            await animateMoveStepByStep(sourceIdx, targetIdx, movingColor);
-                            target.push(movingColor);
+                            await animateFly(sourceIdx, targetIdx, colorToMove);
+                            
+                            target.push(colorToMove);
                             render();
                         }
 
@@ -288,50 +285,54 @@
             }
         }
 
-        // أنيميشن مخصص يعتمد على مرحلتين ببطء واضح (صعود ثواني + طيران ثواني)
-        function animateMoveStepByStep(fromIdx, toIdx, color) {
+        function animateFly(fromIdx, toIdx, color) {
             return new Promise(resolve => {
                 const board = document.getElementById('gameBoard');
                 const tubes = board.getElementsByClassName('tube');
                 
-                const fromTubeEl = tubes[fromIdx];
-                const toTubeEl = tubes[toIdx];
+                const fromTube = tubes[fromIdx];
+                const toTube = tubes[toIdx];
 
-                const fromRect = fromTubeEl.getBoundingClientRect();
-                const toRect = toTubeEl.getBoundingClientRect();
+                const fromRect = fromTube.getBoundingClientRect();
+                const toRect = toTube.getBoundingClientRect();
                 const boardRect = board.getBoundingClientRect();
 
+                // حساب إحداثيات واضحة ومضمونة داخل إطار اللعبة
+                const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
+                const topAirY = 10; // ارتفاع الطيران الأفقية الأعلى في الهواء
+                
+                const endX = toRect.left - boardRect.left + (toRect.width - 42) / 2;
+                const targetSlotIndex = state[toIdx].length; 
+                // حساب العلو الحقيقي لاستقرار الكرة داخل الزجاجة الجديدة
+                const endY = boardRect.height - 25 - (targetSlotIndex * 44);
+
+                // إنشاء عنصر الكرة المتحركة
                 const flyer = document.createElement('div');
                 flyer.className = `flying-ball ${color}`;
-                
-                // الموقع البدائي داخل الأنبوب تقريباً
-                const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
-                const startY = fromRect.top - boardRect.top + 60;
-                
                 flyer.style.left = `${startX}px`;
-                flyer.style.top = `${startY}px`;
-                flyer.style.transition = 'top 0.5s ease-out, left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+                flyer.style.top = `${fromRect.top - boardRect.top + 10}px`; // البداية من رأس الزجاجة الأولى
                 board.appendChild(flyer);
 
-                // 1. الخروج ببطء للأعلى (ارتفاع فوق الزجاجة)
+                // 1. الصعود إلى الهواء فوق الزجاجات
                 setTimeout(() => {
-                    flyer.style.top = `${fromRect.top - boardRect.top - 50}px`;
+                    flyer.style.top = `${topAirY}px`;
                 }, 30);
 
-                // 2. الطيران والهبوط ببطء داخل الزجاجة الجديدة
+                // 2. الانتقال الأفقي نحو الزجاجة الجديدة
                 setTimeout(() => {
-                    const endX = toRect.left - boardRect.left + (toRect.width - 42) / 2;
-                    const endY = toRect.top - boardRect.top + (3 - state[toIdx].length) * 44 + 20;
-
                     flyer.style.left = `${endX}px`;
-                    flyer.style.top = `${endY}px`;
-                }, 550);
+                }, 400);
 
-                // إنهاء الحركة وتثبيت الكرة
+                // 3. الهبوط داخل الزجاجة الجديدة
+                setTimeout(() => {
+                    flyer.style.top = `${endY}px`;
+                }, 750);
+
+                // الانتهاء واستقرار الكرة
                 setTimeout(() => {
                     flyer.remove();
                     resolve();
-                }, 1300);
+                }, 1100);
             });
         }
 
