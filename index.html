@@ -60,7 +60,7 @@
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: 100% 100%;
-            transition: transform 0.2s ease;
+            transition: transform 0.3s ease;
         }
 
         .tube.selected {
@@ -74,7 +74,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            transition: transform 0.25s ease;
+            transition: transform 0.4s ease-in-out;
         }
 
         /* الألوان */
@@ -91,11 +91,11 @@
         .ball.silver-grey { background-image: url('silver-grey.png'); }
 
         .ball.popped {
-            transform: translateY(-45px);
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+            transform: translateY(-50px);
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
         }
 
-        /* الكرة المتحركة في الهواء أثناء النقل */
+        /* الكرة الطائرة ببطء وانسيابية */
         .flying-ball {
             position: absolute;
             width: 42px;
@@ -103,10 +103,11 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            z-index: 50;
-            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100;
+            /* تم زيادة الوقت إلى 0.7 ثانية لتبطئ الحركة وتصبح مرئية بوضوح */
+            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
             pointer-events: none;
-            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.8));
+            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.9));
         }
 
         .controls {
@@ -138,7 +139,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            z-index: 100;
+            z-index: 150;
         }
 
         .win-modal.active {
@@ -202,7 +203,6 @@
 
         function render() {
             const board = document.getElementById('gameBoard');
-            // الحفاظ على عناصر الطيران إن وجدت وعدم مسحها بالكامل
             const flyingElements = board.querySelectorAll('.flying-ball');
             board.innerHTML = '';
             flyingElements.forEach(el => board.appendChild(el));
@@ -239,7 +239,7 @@
             return count;
         }
 
-         async function handleTubeClick(index) {
+        async function handleTubeClick(index) {
             if (isAnimating) return;
 
             if (selectedTubeIndex === null) {
@@ -266,21 +266,16 @@
                         
                         isAnimating = true;
 
-                        // 1. إبراز الكرة الخارِجة ببطء
-                        render();
-                        await new Promise(r => setTimeout(r, 200));
+                        // تنفيذ الحركة البطئية والمرئية
+                        await animateMove(sourceIdx, targetIdx, movingColor, actualMove);
 
-                        // 2. تطبيق النقل بين الأنابيب
                         for (let i = 0; i < actualMove; i++) {
                             target.push(source.pop());
                         }
 
                         selectedTubeIndex = null;
-                        render();
-
-                        // 3. إنهاء الحركة
-                        await new Promise(r => setTimeout(r, 200));
                         isAnimating = false;
+                        render();
                         return;
                     }
                 }
@@ -289,7 +284,6 @@
             }
         }
 
-        // دالة تنفيذ أنيميشن انتقال الكرة في الهواء
         function animateMove(fromIdx, toIdx, color, count) {
             return new Promise(resolve => {
                 const board = document.getElementById('gameBoard');
@@ -302,36 +296,31 @@
                 const toRect = toTubeEl.getBoundingClientRect();
                 const boardRect = board.getBoundingClientRect();
 
-                // إنشاء عنصر مؤقت للكرة الطائرة
                 const flyer = document.createElement('div');
                 flyer.className = `flying-ball ${color}`;
                 
-                // الموقع الابتدائي (فوق الأنبوب المصدر)
+                // النقطة الأولى: صعود من الأنبوب الحالي
                 const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
-                const startY = fromRect.top - boardRect.top - 50;
+                const startY = fromRect.top - boardRect.top - 55;
                 
                 flyer.style.left = `${startX}px`;
                 flyer.style.top = `${startY}px`;
                 board.appendChild(flyer);
 
-                // إخفاء مؤقت للكرة الأصلية من الأنبوب لتبدو وكأنها طارت
-                render();
-
-                // حساب الموقع النهائي (فوق الأنبوب المستهدف)
+                // النقطة الثانية: الطيران والهبوط المريح في الأنبوب الثاني
                 setTimeout(() => {
-                    const newToRect = tubes[toIdx].getBoundingClientRect();
-                    const endX = newToRect.left - boardRect.left + (newToRect.width - 42) / 2;
-                    const endY = newToRect.top - boardRect.top + (3 - (state[toIdx].length)) * 46 - 20;
+                    const endX = toRect.left - boardRect.left + (toRect.width - 42) / 2;
+                    const endY = toRect.top - boardRect.top + (3 - state[toIdx].length) * 44 + 20;
 
                     flyer.style.left = `${endX}px`;
                     flyer.style.top = `${endY}px`;
-                }, 20);
+                }, 50);
 
-                // حذف العنصر المؤقت بعد انتهاء الحركة
+                // الانتظار حتى اكتمال 700 ملي ثانية (0.7 ثانية)
                 setTimeout(() => {
                     flyer.remove();
                     resolve();
-                }, 380);
+                }, 720);
             });
         }
 
