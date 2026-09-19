@@ -42,7 +42,7 @@
             max-width: 420px;
             height: 360px;
             margin: auto 0;
-            flex-wrap: wrap;
+            position: relative;
         }
 
         .tube {
@@ -74,10 +74,10 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            transition: transform 0.25s ease, opacity 0.2s ease;
+            transition: transform 0.25s ease;
         }
 
-        /* ربط جميع الألوان بالصور المرفوعة في مستودعك */
+        /* الألوان */
         .ball.red { background-image: url('red.png'); }
         .ball.blue { background-image: url('blue.png'); }
         .ball.yellow { background-image: url('yellow.png'); }
@@ -95,10 +95,22 @@
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
         }
 
+        /* الكرة المتحركة في الهواء أثناء النقل */
+        .flying-ball {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 50;
+            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.8));
+        }
+
         .controls {
             margin-bottom: 25px;
-            display: flex;
-            gap: 10px;
         }
 
         button {
@@ -117,7 +129,6 @@
             transform: scale(0.95);
         }
 
-        /* نافذة الفوز */
         .win-modal {
             display: none;
             position: fixed;
@@ -162,7 +173,6 @@
         <button onclick="initGame()">إعادة اللعب</button>
     </div>
 
-    <!-- نافذة الفوز -->
     <div class="win-modal" id="winModal">
         <div class="win-box">
             <h2>مبروك! أتقنت الفرز 🎉</h2>
@@ -180,17 +190,22 @@
 
         let state = [];
         let selectedTubeIndex = null;
+        let isAnimating = false;
 
         function initGame() {
             state = JSON.parse(JSON.stringify(initialTubes));
             selectedTubeIndex = null;
+            isAnimating = false;
             document.getElementById('winModal').classList.remove('active');
             render();
         }
 
         function render() {
             const board = document.getElementById('gameBoard');
+            // الحفاظ على عناصر الطيران إن وجدت وعدم مسحها بالكامل
+            const flyingElements = board.querySelectorAll('.flying-ball');
             board.innerHTML = '';
+            flyingElements.forEach(el => board.appendChild(el));
 
             state.forEach((tube, tubeIdx) => {
                 const tubeEl = document.createElement('div');
@@ -198,7 +213,6 @@
                 tubeEl.className = `tube ${isSelected ? 'selected' : ''}`;
                 tubeEl.onclick = () => handleTubeClick(tubeIdx);
 
-                // تحديد الكرات المتطابقة في الأعلى لرفعها سوياً عند التحديد
                 const sameColorCount = getTopMatchCount(tube);
 
                 tube.forEach((color, ballIdx) => {
@@ -214,7 +228,6 @@
             checkWin();
         }
 
-        // حساب عدد الكرات المتطابقة في أعلى الأنبوب
         function getTopMatchCount(tube) {
             if (tube.length === 0) return 0;
             const topColor = tube[tube.length - 1];
@@ -226,16 +239,22 @@
             return count;
         }
 
-        function handleTubeClick(index) {
+        async function handleTubeClick(index) {
+            if (isAnimating) return;
+
             if (selectedTubeIndex === null) {
                 if (state[index].length > 0) {
                     selectedTubeIndex = index;
+                    render();
                 }
             } else if (selectedTubeIndex === index) {
                 selectedTubeIndex = null;
+                render();
             } else {
-                const source = state[selectedTubeIndex];
-                const target = state[index];
+                const sourceIdx = selectedTubeIndex;
+                const targetIdx = index;
+                const source = state[sourceIdx];
+                const target = state[targetIdx];
 
                 if (source.length > 0) {
                     const movingColor = source[source.length - 1];
@@ -243,19 +262,74 @@
                     const availableSpace = 4 - target.length;
 
                     if (availableSpace > 0 && (target.length === 0 || target[target.length - 1] === movingColor)) {
-                        // نقل أكبر عدد ممكن من الكرات المتشابهة
                         const actualMove = Math.min(countToMove, availableSpace);
+                        
+                        // بدء الأنيميشن المرئي
+                        isAnimating = true;
+                        selectedTubeIndex = null;
+
+                        await animateMove(sourceIdx, targetIdx, movingColor, actualMove);
+
+                        // تحديث الحالة بعد انتهاء الحركة
                         for (let i = 0; i < actualMove; i++) {
                             target.push(source.pop());
                         }
+                        isAnimating = false;
+                        render();
+                        return;
                     }
                 }
                 selectedTubeIndex = null;
+                render();
             }
-            render();
         }
 
-        // التحقق من الفوز
+        // دالة تنفيذ أنيميشن انتقال الكرة في الهواء
+        function animateMove(fromIdx, toIdx, color, count) {
+            return new Promise(resolve => {
+                const board = document.getElementById('gameBoard');
+                const tubes = board.getElementsByClassName('tube');
+                
+                const fromTubeEl = tubes[fromIdx];
+                const toTubeEl = tubes[toIdx];
+
+                const fromRect = fromTubeEl.getBoundingClientRect();
+                const toRect = toTubeEl.getBoundingClientRect();
+                const boardRect = board.getBoundingClientRect();
+
+                // إنشاء عنصر مؤقت للكرة الطائرة
+                const flyer = document.createElement('div');
+                flyer.className = `flying-ball ${color}`;
+                
+                // الموقع الابتدائي (فوق الأنبوب المصدر)
+                const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
+                const startY = fromRect.top - boardRect.top - 50;
+                
+                flyer.style.left = `${startX}px`;
+                flyer.style.top = `${startY}px`;
+                board.appendChild(flyer);
+
+                // إخفاء مؤقت للكرة الأصلية من الأنبوب لتبدو وكأنها طارت
+                render();
+
+                // حساب الموقع النهائي (فوق الأنبوب المستهدف)
+                setTimeout(() => {
+                    const newToRect = tubes[toIdx].getBoundingClientRect();
+                    const endX = newToRect.left - boardRect.left + (newToRect.width - 42) / 2;
+                    const endY = newToRect.top - boardRect.top + (3 - (state[toIdx].length)) * 46 - 20;
+
+                    flyer.style.left = `${endX}px`;
+                    flyer.style.top = `${endY}px`;
+                }, 20);
+
+                // حذف العنصر المؤقت بعد انتهاء الحركة
+                setTimeout(() => {
+                    flyer.remove();
+                    resolve();
+                }, 380);
+            });
+        }
+
         function checkWin() {
             const isWin = state.every(tube => {
                 if (tube.length === 0) return true;
@@ -268,7 +342,7 @@
             if (isWin) {
                 setTimeout(() => {
                     document.getElementById('winModal').classList.add('active');
-                }, 300);
+                }, 400);
             }
         }
 
