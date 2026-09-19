@@ -95,7 +95,7 @@
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
         }
 
-        /* الكرة الطائرة ببطء وانسيابية */
+        /* الكرة الطائرة ببطء وانسيابية عالية */
         .flying-ball {
             position: absolute;
             width: 42px;
@@ -104,8 +104,6 @@
             background-repeat: no-repeat;
             background-position: center;
             z-index: 100;
-            /* تم زيادة الوقت إلى 0.7 ثانية لتبطئ الحركة وتصبح مرئية بوضوح */
-            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
             pointer-events: none;
             filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.9));
         }
@@ -217,6 +215,7 @@
 
                 tube.forEach((color, ballIdx) => {
                     const ballEl = document.createElement('div');
+                    // عدم إظهار الكرة الأصلية في الأنبوب إن كانت في حالة طيران
                     const isPopped = isSelected && (ballIdx >= tube.length - sameColorCount);
                     ballEl.className = `ball ${color} ${isPopped ? 'popped' : ''}`;
                     tubeEl.appendChild(ballEl);
@@ -266,16 +265,21 @@
                         
                         isAnimating = true;
 
-                        // تنفيذ الحركة البطئية والمرئية
-                        await animateMove(sourceIdx, targetIdx, movingColor, actualMove);
-
+                        // سحب الكرات المحددة من المصدر وإبقاء مؤشر الاختيار فارغاً
                         for (let i = 0; i < actualMove; i++) {
-                            target.push(source.pop());
+                            source.pop();
+                        }
+                        selectedTubeIndex = null;
+                        render();
+
+                        // تنفيذ أنيميشن بطيء ومرحلي لكل كرة متتالية
+                        for (let i = 0; i < actualMove; i++) {
+                            await animateMoveStepByStep(sourceIdx, targetIdx, movingColor);
+                            target.push(movingColor);
+                            render();
                         }
 
-                        selectedTubeIndex = null;
                         isAnimating = false;
-                        render();
                         return;
                     }
                 }
@@ -284,7 +288,8 @@
             }
         }
 
-        function animateMove(fromIdx, toIdx, color, count) {
+        // أنيميشن مخصص يعتمد على مرحلتين ببطء واضح (صعود ثواني + طيران ثواني)
+        function animateMoveStepByStep(fromIdx, toIdx, color) {
             return new Promise(resolve => {
                 const board = document.getElementById('gameBoard');
                 const tubes = board.getElementsByClassName('tube');
@@ -299,28 +304,34 @@
                 const flyer = document.createElement('div');
                 flyer.className = `flying-ball ${color}`;
                 
-                // النقطة الأولى: صعود من الأنبوب الحالي
+                // الموقع البدائي داخل الأنبوب تقريباً
                 const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
-                const startY = fromRect.top - boardRect.top - 55;
+                const startY = fromRect.top - boardRect.top + 60;
                 
                 flyer.style.left = `${startX}px`;
                 flyer.style.top = `${startY}px`;
+                flyer.style.transition = 'top 0.5s ease-out, left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
                 board.appendChild(flyer);
 
-                // النقطة الثانية: الطيران والهبوط المريح في الأنبوب الثاني
+                // 1. الخروج ببطء للأعلى (ارتفاع فوق الزجاجة)
+                setTimeout(() => {
+                    flyer.style.top = `${fromRect.top - boardRect.top - 50}px`;
+                }, 30);
+
+                // 2. الطيران والهبوط ببطء داخل الزجاجة الجديدة
                 setTimeout(() => {
                     const endX = toRect.left - boardRect.left + (toRect.width - 42) / 2;
                     const endY = toRect.top - boardRect.top + (3 - state[toIdx].length) * 44 + 20;
 
                     flyer.style.left = `${endX}px`;
                     flyer.style.top = `${endY}px`;
-                }, 50);
+                }, 550);
 
-                // الانتظار حتى اكتمال 700 ملي ثانية (0.7 ثانية)
+                // إنهاء الحركة وتثبيت الكرة
                 setTimeout(() => {
                     flyer.remove();
                     resolve();
-                }, 720);
+                }, 1300);
             });
         }
 
