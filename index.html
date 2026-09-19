@@ -24,6 +24,7 @@
             min-height: 100vh;
             padding: 20px 10px;
             overflow: hidden;
+            position: relative;
         }
 
         header h1 {
@@ -60,7 +61,7 @@
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: 100% 100%;
-            transition: transform 0.3s ease;
+            transition: transform 0.2s ease;
         }
 
         .tube.selected {
@@ -74,7 +75,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            transition: transform 0.3s ease-in-out;
+            transition: opacity 0.1s ease;
         }
 
         /* الألوان */
@@ -95,18 +96,22 @@
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
         }
 
-        /* الكرة الطائرة بأمان بدون اختفاء */
+        .ball.hidden-ball {
+            opacity: 0;
+        }
+
+        /* الكرة المتحركة على مستوى الشاشة بالكامل */
         .flying-ball {
-            position: absolute;
+            position: fixed;
             width: 42px;
             height: 42px;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            z-index: 100;
+            z-index: 9999;
             pointer-events: none;
-            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.9));
-            transition: all 0.5s ease-in-out;
+            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.9));
+            transition: left 0.4s ease-in-out, top 0.4s ease-in-out;
         }
 
         .controls {
@@ -138,7 +143,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            z-index: 150;
+            z-index: 10000;
         }
 
         .win-modal.active {
@@ -202,9 +207,7 @@
 
         function render() {
             const board = document.getElementById('gameBoard');
-            const flyingElements = Array.from(board.querySelectorAll('.flying-ball'));
             board.innerHTML = '';
-            flyingElements.forEach(el => board.appendChild(el));
 
             state.forEach((tube, tubeIdx) => {
                 const tubeEl = document.createElement('div');
@@ -218,6 +221,7 @@
                     const ballEl = document.createElement('div');
                     const isPopped = isSelected && (ballIdx >= tube.length - sameColorCount);
                     ballEl.className = `ball ${color} ${isPopped ? 'popped' : ''}`;
+                    ballEl.id = `ball-${tubeIdx}-${ballIdx}`;
                     tubeEl.appendChild(ballEl);
                 });
 
@@ -262,17 +266,17 @@
 
                     if (availableSpace > 0 && (target.length === 0 || target[target.length - 1] === movingColor)) {
                         const actualMove = Math.min(countToMove, availableSpace);
-                        
                         isAnimating = true;
 
                         for (let i = 0; i < actualMove; i++) {
-                            const colorToMove = source.pop();
-                            selectedTubeIndex = null;
-                            render();
-
-                            await animateFly(sourceIdx, targetIdx, colorToMove);
+                            const ballColor = source.pop();
+                            const fromBallIndex = source.length;
                             
-                            target.push(colorToMove);
+                            // تشغيل حركة الانتقال المباشرة
+                            await animateBallTransition(sourceIdx, fromBallIndex, targetIdx, target.length, ballColor);
+                            
+                            target.push(ballColor);
+                            selectedTubeIndex = null;
                             render();
                         }
 
@@ -285,54 +289,53 @@
             }
         }
 
-        function animateFly(fromIdx, toIdx, color) {
+        function animateBallTransition(fromTubeIdx, fromBallIdx, toTubeIdx, toBallIdx, color) {
             return new Promise(resolve => {
-                const board = document.getElementById('gameBoard');
-                const tubes = board.getElementsByClassName('tube');
-                
-                const fromTube = tubes[fromIdx];
-                const toTube = tubes[toIdx];
+                const tubes = document.getElementsByClassName('tube');
+                const fromTube = tubes[fromTubeIdx];
+                const toTube = tubes[toTubeIdx];
 
-                const fromRect = fromTube.getBoundingClientRect();
-                const toRect = toTube.getBoundingClientRect();
-                const boardRect = board.getBoundingClientRect();
+                const fromTubeRect = fromTube.getBoundingClientRect();
+                const toTubeRect = toTube.getBoundingClientRect();
 
-                // حساب إحداثيات واضحة ومضمونة داخل إطار اللعبة
-                const startX = fromRect.left - boardRect.left + (fromRect.width - 42) / 2;
-                const topAirY = 10; // ارتفاع الطيران الأفقية الأعلى في الهواء
-                
-                const endX = toRect.left - boardRect.left + (toRect.width - 42) / 2;
-                const targetSlotIndex = state[toIdx].length; 
-                // حساب العلو الحقيقي لاستقرار الكرة داخل الزجاجة الجديدة
-                const endY = boardRect.height - 25 - (targetSlotIndex * 44);
+                // 1. حساب موضع البداية (أعلى الزجاجة المصدر)
+                const startLeft = fromTubeRect.left + (fromTubeRect.width - 42) / 2;
+                const startTop = fromTubeRect.top - 45;
 
-                // إنشاء عنصر الكرة المتحركة
+                // 2. حساب موضع نهاية الحركة الأفقية (أعلى الزجاجة المستهدفة)
+                const endLeft = toTubeRect.left + (toTubeRect.width - 42) / 2;
+                const endTop = startTop;
+
+                // 3. حساب موضع المستقر النهائى داخل الزجاجة الجديدة
+                const finalTop = toTubeRect.bottom - 18 - ((toBallIdx + 1) * 44);
+
+                // إخفاء الكرة القديمة في الزجاجة فوراً لتظهر الكرة الجديدة فقط
+                const oldBall = document.getElementById(`ball-${fromTubeIdx}-${fromBallIdx}`);
+                if (oldBall) oldBall.classList.add('hidden-ball');
+
+                // إنشاء الكرة المتحركة المباشرة
                 const flyer = document.createElement('div');
                 flyer.className = `flying-ball ${color}`;
-                flyer.style.left = `${startX}px`;
-                flyer.style.top = `${fromRect.top - boardRect.top + 10}px`; // البداية من رأس الزجاجة الأولى
-                board.appendChild(flyer);
+                flyer.style.left = `${startLeft}px`;
+                flyer.style.top = `${startTop}px`;
+                document.body.appendChild(flyer);
 
-                // 1. الصعود إلى الهواء فوق الزجاجات
+                // مرحلة 1: الطيران الأفقي نحو الأنبوب المطلوب
                 setTimeout(() => {
-                    flyer.style.top = `${topAirY}px`;
-                }, 30);
+                    flyer.style.left = `${endLeft}px`;
+                    flyer.style.top = `${endTop}px`;
+                }, 40);
 
-                // 2. الانتقال الأفقي نحو الزجاجة الجديدة
+                // مرحلة 2: النزول داخل الأنبوب المستهدف
                 setTimeout(() => {
-                    flyer.style.left = `${endX}px`;
-                }, 400);
+                    flyer.style.top = `${finalTop}px`;
+                }, 450);
 
-                // 3. الهبوط داخل الزجاجة الجديدة
-                setTimeout(() => {
-                    flyer.style.top = `${endY}px`;
-                }, 750);
-
-                // الانتهاء واستقرار الكرة
+                // إزالة عنصر الأنيميشن والتثبيت النهائي
                 setTimeout(() => {
                     flyer.remove();
                     resolve();
-                }, 1100);
+                }, 850);
             });
         }
 
