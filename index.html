@@ -24,7 +24,6 @@
             min-height: 100vh;
             padding: 20px 10px;
             overflow: hidden;
-            position: relative;
         }
 
         header h1 {
@@ -75,7 +74,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            transition: transform 0.25s ease;
+            transition: transform 0.2s ease;
         }
 
         /* الألوان */
@@ -91,28 +90,24 @@
         .ball.magenta-pink { background-image: url('magenta-pink.png'); }
         .ball.silver-grey { background-image: url('silver-grey.png'); }
 
-        /* ارتفاع الكرة عند اختيار الأنبوب */
+        /* ارتفاع الكرة عند التحديد */
         .ball.popped {
             transform: translateY(-45px);
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
         }
 
-        .ball.hidden-ball {
-            visibility: hidden;
+        /* حركة السقوط السلسة عند النقل */
+        @keyframes dropIn {
+            0% {
+                transform: translateY(-200px);
+            }
+            100% {
+                transform: translateY(0);
+            }
         }
 
-        /* الكرة المتحركة في الهواء */
-        .flying-ball {
-            position: fixed;
-            width: 42px;
-            height: 42px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            z-index: 9999;
-            pointer-events: none;
-            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.9));
-            transition: left 0.35s ease-in-out, top 0.35s ease-in-out;
+        .ball.dropping {
+            animation: dropIn 0.35s ease-in forwards;
         }
 
         .controls {
@@ -197,11 +192,13 @@
         let state = [];
         let selectedTubeIndex = null;
         let isAnimating = false;
+        let droppingBallInfo = null; // يحفظ بيانات الكرة التي تسقط حالياً
 
         function initGame() {
             state = JSON.parse(JSON.stringify(initialTubes));
             selectedTubeIndex = null;
             isAnimating = false;
+            droppingBallInfo = null;
             document.getElementById('winModal').classList.remove('active');
             render();
         }
@@ -220,10 +217,18 @@
 
                 tube.forEach((color, ballIdx) => {
                     const ballEl = document.createElement('div');
-                    const isPopped = isSelected && (ballIdx >= tube.length - sameColorCount);
-                    ballEl.className = `ball ${color} ${isPopped ? 'popped' : ''}`;
-                    ballEl.setAttribute('data-tube', tubeIdx);
-                    ballEl.setAttribute('data-ball', ballIdx);
+                    
+                    let extraClass = '';
+                    // ترفيع الكرة إذا كانت محددة
+                    if (isSelected && (ballIdx >= tube.length - sameColorCount)) {
+                        extraClass = 'popped';
+                    }
+                    // تشغيل حركة النزول إذا كانت هذه الكرة هي المنقولة حديثاً
+                    if (droppingBallInfo && droppingBallInfo.tubeIdx === tubeIdx && droppingBallInfo.ballIdx === ballIdx) {
+                        extraClass = 'dropping';
+                    }
+
+                    ballEl.className = `ball ${color} ${extraClass}`;
                     tubeEl.appendChild(ballEl);
                 });
 
@@ -271,77 +276,29 @@
                         isAnimating = true;
 
                         for (let i = 0; i < actualMove; i++) {
-                            const ballColor = source.pop();
+                            // النقل في المصفوفة
+                            const color = source.pop();
+                            target.push(color);
                             
-                            // تنفيذ الحركة بشكل مرئي متصل
-                            await animateBallTransition(sourceIdx, source.length, targetIdx, target.length, ballColor);
+                            // تفعيل حركة السقوط
+                            droppingBallInfo = { tubeIdx: targetIdx, ballIdx: target.length - 1 };
+                            selectedTubeIndex = null; // إلغاء التحديد لتبدأ الحركة فوراً
                             
-                            target.push(ballColor);
-                            selectedTubeIndex = null;
-                            render();
+                            render(); // إعادة الرسم بحركة السقوط
+                            
+                            // الانتظار حتى تكتمل حركة السقوط قبل نقل الكرة التالية
+                            await new Promise(resolve => setTimeout(resolve, 360));
+                            droppingBallInfo = null;
                         }
 
                         isAnimating = false;
+                        render();
                         return;
                     }
                 }
                 selectedTubeIndex = null;
                 render();
             }
-        }
-
-        function animateBallTransition(fromTubeIdx, fromBallIdx, toTubeIdx, toBallIdx, color) {
-            return new Promise(resolve => {
-                const tubes = document.getElementsByClassName('tube');
-                const fromTube = tubes[fromTubeIdx];
-                const toTube = tubes[toTubeIdx];
-
-                const fromTubeRect = fromTube.getBoundingClientRect();
-                const toTubeRect = toTube.getBoundingClientRect();
-
-                // أخذ موقع الكرة المرفوعة الحالية بدقة لمنع أي قفزة أو اختفاء
-                const poppedBallEl = fromTube.querySelector('.ball.popped');
-                let startLeft = fromTubeRect.left + (fromTubeRect.width - 42) / 2;
-                let startTop = fromTubeRect.top - 40;
-
-                if (poppedBallEl) {
-                    const poppedRect = poppedBallEl.getBoundingClientRect();
-                    startLeft = poppedRect.left;
-                    startTop = poppedRect.top;
-                    poppedBallEl.style.visibility = 'hidden'; // إخفاء الكرة الأصلية لحظياً عند استلام العنصر المتحرك لها
-                }
-
-                // 1. موقع أفق المنتصف فوق الأنبوب المستهدف
-                const endLeft = toTubeRect.left + (toTubeRect.width - 42) / 2;
-                const endTop = startTop;
-
-                // 2. موقع الاستقرار النهائي داخل الأنبوب
-                const finalTop = toTubeRect.bottom - 18 - ((toBallIdx + 1) * 44);
-
-                // إنشاء عنصر الطيران في موقع الكرة بالضبط
-                const flyer = document.createElement('div');
-                flyer.className = `flying-ball ${color}`;
-                flyer.style.left = `${startLeft}px`;
-                flyer.style.top = `${startTop}px`;
-                document.body.appendChild(flyer);
-
-                // الخطوة الأولى: الطيران الأفقي نحو الأنبوب المستهدف
-                setTimeout(() => {
-                    flyer.style.left = `${endLeft}px`;
-                    flyer.style.top = `${endTop}px`;
-                }, 30);
-
-                // الخطوة الثانية: النزول السلس داخل الأنبوب المستهدف
-                setTimeout(() => {
-                    flyer.style.top = `${finalTop}px`;
-                }, 380);
-
-                // إنهاء الأنيميشن وتحديث الشاشة
-                setTimeout(() => {
-                    flyer.remove();
-                    resolve();
-                }, 750);
-            });
         }
 
         function checkWin() {
