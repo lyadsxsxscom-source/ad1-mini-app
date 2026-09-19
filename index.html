@@ -42,17 +42,18 @@
             max-width: 420px;
             height: 360px;
             margin: auto 0;
+            flex-wrap: wrap;
         }
 
-         .tube {
+        .tube {
             width: 65px;
-            height: 230px; /* زيادة الارتفاع قليلاً ليتسع للكرات الأربع بمرتاح */
+            height: 230px;
             position: relative;
             display: flex;
             flex-direction: column-reverse;
             align-items: center;
-            padding-bottom: 12px; /* مسافة بسيطة من القاع */
-            padding-top: 15px; /* مسافة لتستقر الكرة العلوية داخل الأنبوب */
+            padding-bottom: 12px;
+            padding-top: 15px;
             gap: 2px;
             cursor: pointer;
             background-image: url('Tube.png');
@@ -68,7 +69,7 @@
         }
 
         .ball {
-            width: 42px; /* تصغير قطر الكرة قليلاً لتناسب انحناء الأنبوب */
+            width: 42px;
             height: 42px;
             background-size: contain;
             background-repeat: no-repeat;
@@ -76,26 +77,36 @@
             transition: transform 0.25s ease, opacity 0.2s ease;
         }
 
+        /* ربط جميع الألوان بالصور المرفوعة في مستودعك */
         .ball.red { background-image: url('red.png'); }
         .ball.blue { background-image: url('blue.png'); }
         .ball.yellow { background-image: url('yellow.png'); }
+        .ball.green { background-image: url('green.png'); }
+        .ball.orange { background-image: url('orange.png'); }
+        .ball.purple { background-image: url('purple.png'); }
+        .ball.pink { background-image: url('pink.png'); }
+        .ball.cyan-turquoise { background-image: url('cyan-turquoise.png'); }
+        .ball.lavender-light_blue { background-image: url('lavender-light_blue.png'); }
+        .ball.magenta-pink { background-image: url('magenta-pink.png'); }
+        .ball.silver-grey { background-image: url('silver-grey.png'); }
 
         .ball.popped {
-            transform: translateY(-45px); /* ارتفاع الكرة عند اختيار الأنبوب */
+            transform: translateY(-45px);
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
         }
 
-
         .controls {
             margin-bottom: 25px;
+            display: flex;
+            gap: 10px;
         }
 
         button {
             background: linear-gradient(45deg, #00f3ff, #ff007f);
             border: none;
             color: white;
-            padding: 12px 28px;
-            font-size: 1.1rem;
+            padding: 12px 24px;
+            font-size: 1rem;
             font-weight: bold;
             border-radius: 25px;
             box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
@@ -104,6 +115,38 @@
 
         button:active {
             transform: scale(0.95);
+        }
+
+        /* نافذة الفوز */
+        .win-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 14, 21, 0.85);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .win-modal.active {
+            display: flex;
+        }
+
+        .win-box {
+            background: #161824;
+            border: 2px solid #00f3ff;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .win-box h2 {
+            color: #ff007f;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff007f;
         }
     </style>
 </head>
@@ -117,6 +160,14 @@
 
     <div class="controls">
         <button onclick="initGame()">إعادة اللعب</button>
+    </div>
+
+    <!-- نافذة الفوز -->
+    <div class="win-modal" id="winModal">
+        <div class="win-box">
+            <h2>مبروك! أتقنت الفرز 🎉</h2>
+            <button onclick="initGame()">المرحلة التالية</button>
+        </div>
     </div>
 
     <script>
@@ -133,6 +184,7 @@
         function initGame() {
             state = JSON.parse(JSON.stringify(initialTubes));
             selectedTubeIndex = null;
+            document.getElementById('winModal').classList.remove('active');
             render();
         }
 
@@ -146,15 +198,32 @@
                 tubeEl.className = `tube ${isSelected ? 'selected' : ''}`;
                 tubeEl.onclick = () => handleTubeClick(tubeIdx);
 
+                // تحديد الكرات المتطابقة في الأعلى لرفعها سوياً عند التحديد
+                const sameColorCount = getTopMatchCount(tube);
+
                 tube.forEach((color, ballIdx) => {
                     const ballEl = document.createElement('div');
-                    const isTopBall = ballIdx === tube.length - 1;
-                    ballEl.className = `ball ${color} ${isSelected && isTopBall ? 'popped' : ''}`;
+                    const isPopped = isSelected && (ballIdx >= tube.length - sameColorCount);
+                    ballEl.className = `ball ${color} ${isPopped ? 'popped' : ''}`;
                     tubeEl.appendChild(ballEl);
                 });
 
                 board.appendChild(tubeEl);
             });
+
+            checkWin();
+        }
+
+        // حساب عدد الكرات المتطابقة في أعلى الأنبوب
+        function getTopMatchCount(tube) {
+            if (tube.length === 0) return 0;
+            const topColor = tube[tube.length - 1];
+            let count = 0;
+            for (let i = tube.length - 1; i >= 0; i--) {
+                if (tube[i] === topColor) count++;
+                else break;
+            }
+            return count;
         }
 
         function handleTubeClick(index) {
@@ -168,14 +237,39 @@
                 const source = state[selectedTubeIndex];
                 const target = state[index];
 
-                if (target.length < 4) {
-                    if (target.length === 0 || target[target.length - 1] === source[source.length - 1]) {
-                        target.push(source.pop());
+                if (source.length > 0) {
+                    const movingColor = source[source.length - 1];
+                    const countToMove = getTopMatchCount(source);
+                    const availableSpace = 4 - target.length;
+
+                    if (availableSpace > 0 && (target.length === 0 || target[target.length - 1] === movingColor)) {
+                        // نقل أكبر عدد ممكن من الكرات المتشابهة
+                        const actualMove = Math.min(countToMove, availableSpace);
+                        for (let i = 0; i < actualMove; i++) {
+                            target.push(source.pop());
+                        }
                     }
                 }
                 selectedTubeIndex = null;
             }
             render();
+        }
+
+        // التحقق من الفوز
+        function checkWin() {
+            const isWin = state.every(tube => {
+                if (tube.length === 0) return true;
+                if (tube.length === 4) {
+                    return tube.every(color => color === tube[0]);
+                }
+                return false;
+            });
+
+            if (isWin) {
+                setTimeout(() => {
+                    document.getElementById('winModal').classList.add('active');
+                }, 300);
+            }
         }
 
         initGame();
