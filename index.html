@@ -239,7 +239,7 @@
             return count;
         }
 
-        async function handleTubeClick(index) {
+         async function handleTubeClick(index) {
             if (isAnimating) return;
 
             if (selectedTubeIndex === null) {
@@ -264,18 +264,23 @@
                     if (availableSpace > 0 && (target.length === 0 || target[target.length - 1] === movingColor)) {
                         const actualMove = Math.min(countToMove, availableSpace);
                         
-                        // بدء الأنيميشن المرئي
                         isAnimating = true;
-                        selectedTubeIndex = null;
 
-                        await animateMove(sourceIdx, targetIdx, movingColor, actualMove);
+                        // 1. إبراز الكرة الخارِجة ببطء
+                        render();
+                        await new Promise(r => setTimeout(r, 200));
 
-                        // تحديث الحالة بعد انتهاء الحركة
+                        // 2. تطبيق النقل بين الأنابيب
                         for (let i = 0; i < actualMove; i++) {
                             target.push(source.pop());
                         }
-                        isAnimating = false;
+
+                        selectedTubeIndex = null;
                         render();
+
+                        // 3. إنهاء الحركة
+                        await new Promise(r => setTimeout(r, 200));
+                        isAnimating = false;
                         return;
                     }
                 }
