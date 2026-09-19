@@ -2,14 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ألعاب الألغاز - Ball Sort</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>فرز الكرات - Ball Sort</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -22,77 +23,80 @@
             justify-content: space-between;
             min-height: 100vh;
             padding: 20px 10px;
+            overflow: hidden;
         }
 
-        header {
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        h1 {
-            font-size: 1.5rem;
+        header h1 {
+            font-size: 1.6rem;
             color: #00f3ff;
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            text-shadow: 0 0 12px rgba(0, 243, 255, 0.6);
+            margin-top: 10px;
         }
 
         .game-container {
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
-            max-width: 400px;
-            height: 350px;
+            max-width: 420px;
+            height: 360px;
             margin: auto 0;
         }
 
         .tube {
-            width: 60px;
-            height: 200px;
-            border: 3px solid #00f3ff;
-            border-top: none;
-            border-radius: 0 0 25px 25px;
+            width: 65px;
+            height: 220px;
+            position: relative;
             display: flex;
             flex-direction: column-reverse;
             align-items: center;
-            padding-bottom: 5px;
-            gap: 5px;
-            box-shadow: 0 0 12px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(0, 243, 255, 0.1);
-            background: rgba(255, 255, 255, 0.02);
+            padding-bottom: 8px;
+            gap: 4px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            /* خلفية الأنبوب باستخدام صورتك */
+            background: url('tube.png') no-repeat center bottom / contain;
+            transition: transform 0.2s ease;
         }
 
         .tube.selected {
-            border-color: #ff007f;
-            box-shadow: 0 0 18px rgba(255, 0, 127, 0.6), inset 0 0 12px rgba(ff, 0, 127, 0.2);
-            transform: translateY(-8px);
+            transform: translateY(-10px);
+            filter: drop-shadow(0 0 8px #ff007f);
         }
 
         .ball {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            transition: transform 0.2s ease, top 0.2s ease;
+            width: 48px;
+            height: 48px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .red { background: radial-gradient(circle at 30% 30%, #ff5555, #990000); box-shadow: 0 0 8px rgba(255, 85, 85, 0.5); }
-        .blue { background: radial-gradient(circle at 30% 30%, #55ffff, #0088cc); box-shadow: 0 0 8px rgba(85, 255, 255, 0.5); }
-        .yellow { background: radial-gradient(circle at 30% 30%, #ffff55, #cc9900); box-shadow: 0 0 8px rgba(255, 255, 85, 0.5); }
+        /* ربط الكرات بالصور المرفوعة */
+        .ball.red { background-image: url('red.png'); }
+        .ball.blue { background-image: url('blue.png'); }
+        .ball.yellow { background-image: url('yellow.png'); }
+
+        /* حركة خروج الكرة لأعلى الأنبوب عند الاختيار */
+        .ball.popped {
+            transform: translateY(-40px);
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+        }
 
         .controls {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         button {
             background: linear-gradient(45deg, #00f3ff, #ff007f);
             border: none;
             color: white;
-            padding: 12px 24px;
-            font-size: 1rem;
+            padding: 12px 28px;
+            font-size: 1.1rem;
             font-weight: bold;
             border-radius: 25px;
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
             cursor: pointer;
         }
 
@@ -107,18 +111,16 @@
         <h1>فرز الكرات - Ball Sort</h1>
     </header>
 
-    <div class="game-container" id="gameBoard">
-        <!-- الأنابيب والكرات سيتم إنشاؤها عبر JavaScript -->
-    </div>
+    <div class="game-container" id="gameBoard"></div>
 
     <div class="controls">
-        <button onclick="initGame()">إعادة التشغيل</button>
+        <button onclick="initGame()">إعادة اللعب</button>
     </div>
 
     <script>
-        const tubesData = [
-            ['yellow', 'red', 'yellow', 'red'],
-            ['blue', 'yellow', 'blue', 'red'],
+        const initialTubes = [
+            ['red', 'yellow', 'blue', 'yellow'],
+            ['blue', 'red', 'yellow', 'red'],
             ['red', 'blue', 'yellow', 'blue'],
             []
         ];
@@ -127,7 +129,7 @@
         let selectedTubeIndex = null;
 
         function initGame() {
-            state = JSON.parse(JSON.stringify(tubesData));
+            state = JSON.parse(JSON.stringify(initialTubes));
             selectedTubeIndex = null;
             render();
         }
@@ -136,14 +138,16 @@
             const board = document.getElementById('gameBoard');
             board.innerHTML = '';
 
-            state.forEach((tube, index) => {
+            state.forEach((tube, tubeIdx) => {
                 const tubeEl = document.createElement('div');
-                tubeEl.className = `tube ${selectedTubeIndex === index ? 'selected' : ''}`;
-                tubeEl.onclick = () => handleTubeClick(index);
+                const isSelected = selectedTubeIndex === tubeIdx;
+                tubeEl.className = `tube ${isSelected ? 'selected' : ''}`;
+                tubeEl.onclick = () => handleTubeClick(tubeIdx);
 
-                tube.forEach(color => {
+                tube.forEach((color, ballIdx) => {
                     const ballEl = document.createElement('div');
-                    ballEl.className = `ball ${color}`;
+                    const isTopBall = ballIdx === tube.length - 1;
+                    ballEl.className = `ball ${color} ${isSelected && isTopBall ? 'popped' : ''}`;
                     tubeEl.appendChild(ballEl);
                 });
 
